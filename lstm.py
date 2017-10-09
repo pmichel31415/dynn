@@ -1,7 +1,9 @@
 from __future__ import print_function, division
 
 import dynet as dy
+
 import layers
+
 
 class NaryTreeLSTMCell(layers.Layer):
     """N-ary TreeLSTM as introduced in Tai et al, 2015"""
