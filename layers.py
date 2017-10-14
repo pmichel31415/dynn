@@ -45,7 +45,7 @@ class Layer(object):
 class DenseLayer(Layer):
     """Densely connected layer"""
     def __init__(self, di, dh, pc,activation=dy.tanh, dropout=0.0):
-        super(DenseLayer, self).__init__(pc, 'gated')
+        super(DenseLayer, self).__init__(pc, 'dense')
         self.W_p = self.pc.add_parameters((dh, di), name='W')
         self.b_p = self.pc.add_parameters(dh, name='b', init=ZeroInit)
 
