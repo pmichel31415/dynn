@@ -89,4 +89,32 @@ def BinaryTreeLSTM(di, dh, pc, dropout=0.0, diagonal=False):
     """Binary tree-lstm"""
     return NaryTreeLSTMCell(2, di, dh, pc, dropout=dropout, diagonal=diagonal)
 
+class CompactLSTM(layers.Layer):
 
+    def __init__(self, di, dh, pc, dropout=0.0):
+        super(CompactLSTM, self).__init__(pc, 'compact-lstm')
+        self.di = di
+        self.dh = dh
+        self.dropout = dropout
+
+        # Parameters
+        self.Whx_p = self.pc.add_parameters((self.dh * 4, self.di), name='Whx')
+        self.Whh_p = self.pc.add_parameters((self.dh * 4, self.dh), name='Whh')
+        self.bh_p = self.pc.add_parameters((self.dh * 4,), name='bh')
+
+    def init(self, test=False, update=True):
+        # Load weights in computation graph
+        self.Whx = self.Whx_p.expr(update)
+        self.Whh = self.Whh_p.expr(update)
+        self.bh = self.bh_p.expr(update)
+        # Initialize dropout mask
+        self.test=test
+        if not test and self.dropout>0:
+            self.dropout_mask_x = dy.dropout(dy.ones(self.di), self.dropout)
+            self.dropout_mask_h = dy.dropout(dy.ones(self.dh), self.dropout)
+
+    def __call__(self, h, c, x):
+        gates = dy.vanilla_lstm_gates_dropout(x,h,self.Whx, self.Whh,self.bh, self.dropout_mask_x, self.dropout_mask_h)
+        new_c = dy.vanilla_lstm_c(c, gates)
+        new_h = dy.vanilla_lstm_h(c, gates)
+        return new_h, new_c
