@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 
+import numpy as np
 import dynet as dy
 
 import layers
@@ -98,9 +99,10 @@ class CompactLSTM(layers.Layer):
         self.dropout = dropout
 
         # Parameters
-        self.Whx_p = self.pc.add_parameters((self.dh * 4, self.di), name='Whx')
-        self.Whh_p = self.pc.add_parameters((self.dh * 4, self.dh), name='Whh')
-        self.bh_p = self.pc.add_parameters((self.dh * 4,), name='bh')
+        scale = np.sqrt(6/(2*self.dh + self.di))
+        self.Whx_p = self.pc.add_parameters((self.dh * 4, self.di), name='Whx', init=dy.UniformInitializer(scale))
+        self.Whh_p = self.pc.add_parameters((self.dh * 4, self.dh), name='Whh', init=dy.UniformInitializer(scale))
+        self.bh_p = self.pc.add_parameters((self.dh * 4,), name='bh', init=layers.ZeroInit)
 
     def init(self, test=False, update=True):
         # Load weights in computation graph
