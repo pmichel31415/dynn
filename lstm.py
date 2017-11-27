@@ -121,5 +121,5 @@ class CompactLSTM(layers.Layer):
         else:
             gates = dy.vanilla_lstm_gates(x,h,self.Whx, self.Whh,self.bh)
         new_c = dy.vanilla_lstm_c(c, gates)
-        new_h = dy.vanilla_lstm_h(c, gates)
+        new_h = dy.vanilla_lstm_h(new_c, gates)
         return new_h, new_c
