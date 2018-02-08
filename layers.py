@@ -44,17 +44,20 @@ class Layer(object):
 
 class DenseLayer(Layer):
     """Densely connected layer"""
-    def __init__(self, di, dh, pc,activation=dy.tanh, dropout=0.0):
+    def __init__(self, di, dh, pc,activation=dy.tanh, dropout=0.0, nobias=False):
         super(DenseLayer, self).__init__(pc, 'dense')
         self.W_p = self.pc.add_parameters((dh, di), name='W')
-        self.b_p = self.pc.add_parameters(dh, name='b', init=ZeroInit)
+        if not nobias:
+            self.b_p = self.pc.add_parameters(dh, name='b', init=ZeroInit)
 
         self.dropout = dropout
+        self.nobias = nobias
         self.activation = activation
 
     def init(self, test=False, update=True):
         self.W = self.W_p.expr(update)
-        self.b = self.b_p.expr(update)
+        if not self.nobias:
+            self.b = self.b_p.expr(update)
 
         self.test = test
 
@@ -63,7 +66,11 @@ class DenseLayer(Layer):
         if not self.test and self.dropout > 0:
             x = dy.dropout(x, self.dropout)
         # Output
-        self.h = self.activation(dy.affine_transform([self.b, self.W, x]))
+        if self.nobias:
+            self.h = self.W * x
+        else:
+            self.h = self.activation(dy.affine_transform([self.b, self.W, x]))
+
         # Final output
         return self.h
 
