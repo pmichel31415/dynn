@@ -91,6 +91,7 @@ def BinaryTreeLSTM(di, dh, pc, dropout=0.0, diagonal=False):
     return NaryTreeLSTMCell(2, di, dh, pc, dropout=dropout, diagonal=diagonal)
 
 class CompactLSTM(layers.Layer):
+    """standard LSTM using dynet's memory efficient LSTM operations"""
 
     def __init__(self, di, dh, pc, dropout=0.0):
         super(CompactLSTM, self).__init__(pc, 'compact-lstm')
@@ -123,3 +124,20 @@ class CompactLSTM(layers.Layer):
         new_c = dy.vanilla_lstm_c(c, gates)
         new_h = dy.vanilla_lstm_h(new_c, gates)
         return new_h, new_c
+
+
+def transduce(lstm, xs, h0, c0, masks=None):
+    """Helper function for LSTM transduction with masking"""
+    h, c = h0, c0
+    hs = []
+    if masks is not None:
+        for x, m in zip(xs, masks):
+            h, c = lstm(h, c, x)
+            hs.append(h)
+            m_e = dy.inputTensor(m, batched=True)
+            h, c = dy.cmult(h, m_e), dy.cmult(c, m_e)
+    else:
+        for x in xs:
+            h, c = lstm(h, c, x)
+            hs.append(h)
+    return hs
