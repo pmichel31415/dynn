@@ -91,7 +91,7 @@ def BinaryTreeLSTM(di, dh, pc, dropout=0.0, diagonal=False):
     return NaryTreeLSTMCell(2, di, dh, pc, dropout=dropout, diagonal=diagonal)
 
 class CompactLSTM(layers.Layer):
-    """standard LSTM using dynet's memory efficient LSTM operations"""
+    """Standard LSTM using dynet's memory efficient LSTM operations"""
 
     def __init__(self, di, dh, pc, dropout=0.0):
         super(CompactLSTM, self).__init__(pc, 'compact-lstm')
