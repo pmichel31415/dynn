@@ -130,7 +130,7 @@ class CompactLSTM(layers.Layer):
         return new_h, new_c
 
 
-def transduce(lstm, xs, h0, c0, lengths=None, backward=False):
+def transduce_lstm(lstm, xs, h0, c0, lengths=None, backward=False):
     """Helper function for LSTM transduction with masking"""
     h, c = h0, c0
     hs = []
