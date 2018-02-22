@@ -18,7 +18,6 @@ Example:
         y = layer(x)
 """
 
-
 from __future__ import print_function, division
 
 import sys
@@ -27,8 +26,10 @@ import dynet as dy
 OneInit = dy.ConstInitializer(1)
 ZeroInit = dy.ConstInitializer(0)
 
+
 class Layer(object):
     """Base layer object"""
+
     def __init__(self, pc, name):
         """Creates a subcollection for this layer with a custom name"""
         self.pc = pc.add_subcollection(name=name)
@@ -44,7 +45,8 @@ class Layer(object):
 
 class DenseLayer(Layer):
     """Densely connected layer"""
-    def __init__(self, di, dh, pc,activation=dy.tanh, dropout=0.0, nobias=False):
+
+    def __init__(self, di, dh, pc, activation=dy.tanh, dropout=0.0, nobias=False):
         super(DenseLayer, self).__init__(pc, 'dense')
         self.W_p = self.pc.add_parameters((dh, di), name='W')
         if not nobias:
@@ -74,9 +76,11 @@ class DenseLayer(Layer):
         # Final output
         return self.h
 
+
 class GatedLayer(Layer):
     """Gated linear layer: :math:`y=(W_ox+b_o)\circ \sigma(W_gx+b_g)`"""
-    def __init__(self, di, dh, pc,activation=dy.tanh, dropout=0.0):
+
+    def __init__(self, di, dh, pc, activation=dy.tanh, dropout=0.0):
         super(GatedLayer, self).__init__(pc, 'gated')
         self.Wo_p = self.pc.add_parameters((dh, di), name='Wo')
         self.bo_p = self.pc.add_parameters(dh, name='bo', init=ZeroInit)
@@ -103,9 +107,29 @@ class GatedLayer(Layer):
         # final output
         return dy.cmult(self.g, self.o)
 
+
+class StackedLayers(Layer):
+    """Helper class to stack layers"""
+
+    def __init__(self, *args):
+        super(StackedLayers, self).__init__(pc, 'stacked-layers')
+        self.layers = args
+
+    def init(self, test=False, update=True):
+        for layer in self.layers:
+            layer.init(test=test, update=update)
+
+    def __call__(self, x):
+        self.hs = [x]
+        for layer in self.layers:
+            self.hs.append(layer(self.hs[-1]))
+        return self.hs[-1]
+
+
 class LayerNormalization(Layer):
     """Layer normalization layer"""
-    def __init__(self, di, pc,):
+
+    def __init__(self, di, pc, ):
         super(LayerNormalization, self).__init__(pc, 'layer-norm')
         self.gain_p = self.pc.add_parameters(di, name='gain', init=OneInit)
         self.bias_p = self.pc.add_parameters(di, name='bias', init=ZeroInit)
