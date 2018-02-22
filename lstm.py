@@ -155,3 +155,23 @@ def transduce_lstm(lstm, xs, h0, c0, lengths=None, backward=False):
     if backward:
         hs = hs[::-1]
     return hs
+
+
+def transduce_bilstm(lstm_fwd, lstm_bwd, xs, h0_fwd, c0_fwd, h0_bwd, c0_bwd, lengths=None):
+    """Helper function for biLSTM transduction with masking
+
+    :param lstm_fwd:    LSTM cell to be used in the forward pass
+    :param lstm_bwd:    LSTM cell to be used in the backward pass
+    :param xs:          List of input expressions
+    :param h0_fwd:      Initial state h of the forward pass
+    :param c0_fwd:      Initial state c of the forward pass
+    :param h0_fwd:      Initial state h of the backward pass
+    :param c0_fwd:      Initial state c of the backward pass
+    :param lengths:     List of lengths of all the input sequences in the minibatch (for masking)
+
+    :returns hs_fwd, hs_bwd: List of output states of the forward and backward pass
+
+    """
+    hs_fwd = transduce_lstm(lstm_fwd, xs, h0_fwd, c0_fwd, lengths=lengths, backward=False)
+    hs_bwd = transduce_lstm(lstm_bwd, xs, h0_bwd, c0_bwd, lengths=lengths, backward=True)
+    return hs_fwd, hs_bwd
