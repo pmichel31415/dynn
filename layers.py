@@ -57,9 +57,9 @@ class DenseLayer(Layer):
         self.activation = activation
 
     def init(self, test=False, update=True):
-        self.W = self.W_p.expr(update)
+        self.W = self.W_p if update else dy.const_parameter(self.W_p)
         if not self.nobias:
-            self.b = self.b_p.expr(update)
+            self.b = self.b_p if update else dy.const_parameter(self.b_p)
 
         self.test = test
 
@@ -91,11 +91,11 @@ class GatedLayer(Layer):
         self.activation = activation
 
     def init(self, test=False, update=True):
-        self.Wo = self.Wo_p.expr(update)
-        self.bo = self.bo_p.expr(update)
+        self.Wo = self.Wo_p if update else dy.const_parameter(self.Wo_p)
+        self.bo = self.bo_p if update else dy.const_parameter(self.bo_p)
 
-        self.Wg = self.Wg_p.expr(update)
-        self.bg = self.bg_p.expr(update)
+        self.Wg = self.Wg_p if update else dy.const_parameter(self.Wg_p)
+        self.bg = self.bg_p if update else dy.const_parameter(self.bg_p)
 
         self.test = test
 
@@ -108,11 +108,10 @@ class GatedLayer(Layer):
         return dy.cmult(self.g, self.o)
 
 
-class StackedLayers(Layer):
+class StackedLayers(object):
     """Helper class to stack layers"""
 
     def __init__(self, *args):
-        super(StackedLayers, self).__init__(pc, 'stacked-layers')
         self.layers = args
 
     def init(self, test=False, update=True):
@@ -135,8 +134,8 @@ class LayerNormalization(Layer):
         self.bias_p = self.pc.add_parameters(di, name='bias', init=ZeroInit)
 
     def init(self, test=False, update=True):
-        self.gain = self.gain_p.expr(update)
-        self.bias = self.bias_p.expr(update)
+        self.gain = self.gain_p if update else dy.const_parameter(self.gain_p)
+        self.bias = self.bias_p if update else dy.const_parameter(self.bias_p)
 
         self.test = test
 
