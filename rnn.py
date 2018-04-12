@@ -3,7 +3,7 @@ from __future__ import print_function, division
 import numpy as np
 import dynet as dy
 
-import .layers
+from . import layers
 
 
 class ElmanRNN(layers.Layer):
