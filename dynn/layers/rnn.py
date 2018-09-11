@@ -1,12 +1,15 @@
-from __future__ import print_function, division
+#!/usr/bin/env python3
+"""FIXME"""
 
 import numpy as np
 import dynet as dy
 
-import layers
+from dynn.layers import BaseLayer
+from dynn.parameter_initialization import ZeroInit, NormalInit
+from dynn import activations
 
 
-class ElmanRNN(layers.Layer):
+class ElmanRNN(BaseLayer):
     """Standard Elman RNN"""
 
     def __init__(self, di, dh, pc, activation=activations.tanh, dropout=0.0):
@@ -19,10 +22,14 @@ class ElmanRNN(layers.Layer):
 
         # Parameters
         scale_whx = np.sqrt(2 / (self.dh + self.di))
-        self.Whx_p = self.pc.add_parameters((self.dh , self.di), name='Whx', init=dy.NormalInitializer(scale_whh))
+        scale_whh = 1.0 / np.sqrt(self.dh)
+        self.Whx_p = self.pc.add_parameters(
+            (self.dh, self.di), name='Whx', init=NormalInit(scale_whx))
         scale_whh = np.sqrt(1 / self.dh)
-        self.Whh_p = self.pc.add_parameters((self.dh, self.dh), name='Whh', init=dy.NormalInitializer(scale_whh))
-        self.bh_p = self.pc.add_parameters((self.dh,), name='bh', init=layers.ZeroInit)
+        self.Whh_p = self.pc.add_parameters(
+            (self.dh, self.dh), name='Whh', init=NormalInit(scale_whh))
+        self.bh_p = self.pc.add_parameters(
+            (self.dh,), name='bh', init=ZeroInit)
 
     def init(self, test=False, update=True):
         # Load weights in computation graph
