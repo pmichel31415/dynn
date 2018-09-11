@@ -1,37 +1,17 @@
-#!/usr/bin/env python3
-"""
-Layers are typically used like this:
+from . import (
+    base_layer,
+    dense_layers,
+    lstm,
+    pooling_layers,
+    convolution_layers,
+    normalization_layers,
+)
 
-Example:
-
-    .. code-block:: python
-
-        # Instantiate layer
-        layer = Layer(parameter_collection, *args, **kwargs)
-        # [...]
-        # Renew computation graph
-        dy.renew_cg()
-        # Initialize layer
-        layer.init(*args, **kwargs)
-        # Apply layer forward pass
-        y = layer(x)
-"""
-
-
-class BaseLayer(object):
-    """Base layer class"""
-
-    def __init__(self, pc, name):
-        """Creates a subcollection for this layer with a custom name"""
-        self.pc = pc.add_subcollection(name=name)
-
-    def init(self, *args, **kwargs):
-        """Initialize the layer before performing computation
-
-        For example setup dropout, freeze some parameters, etc...
-        """
-        raise NotImplementedError()
-
-    def __call__(self, *args, **kwargs):
-        """Execute forward pass"""
-        raise NotImplementedError()
+__all__ = [
+    "base_layer",
+    "dense_layers",
+    "lstm",
+    "pooling_layers",
+    "convolution_layers",
+    "normalization_layers",
+]

@@ -12,10 +12,10 @@ class DenseLayer(BaseLayer):
     :math:`y=f(Wx+b)`
 
     Args:
-        input_dim (int): Input dimension
-        output_dim (int): Output dimension
         pc (dynet.ParameterCollection): Parameter collection to
             hold the parameters
+        input_dim (int): Input dimension
+        output_dim (int): Output dimension
         activation (function, optional): activation function
             (default: ``dynet.tanh``)
         dropout (float, optional):  Dropout rate (default 0)
@@ -24,9 +24,9 @@ class DenseLayer(BaseLayer):
 
     def __init__(
         self,
+        pc,
         input_dim,
         output_dim,
-        pc,
         activation=dy.tanh,
         dropout=0.0,
         nobias=False,
@@ -84,11 +84,11 @@ class GatedLayer(BaseLayer):
 
     :math:`y=(W_ox+b_o)\circ \sigma(W_gx+b_g)`
 
-         Args:
-        input_dim (int): Input dimension
-        output_dim (int): Output dimension
+    Args:
         pc (dynet.ParameterCollection): Parameter collection to
             hold the parameters
+        input_dim (int): Input dimension
+        output_dim (int): Output dimension
         activation (function, optional): activation function
             (default: ``dynet.tanh``)
         dropout (float, optional):  Dropout rate (default 0)
@@ -96,9 +96,9 @@ class GatedLayer(BaseLayer):
 
     def __init__(
         self,
+        pc,
         input_dim,
         output_dim,
-        pc,
         activation=dy.tanh,
         dropout=0.0,
     ):

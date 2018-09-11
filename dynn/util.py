@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Utility functions"""
 
-from __future__ import print_function, division
-
 import dynet as dy
 
 

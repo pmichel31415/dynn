@@ -16,7 +16,7 @@ class TestDenseLayer(TestCase):
     def test_forward_backward(self):
         # Create compact lstm
         dense = dense_layers.DenseLayer(
-            self.pc, self.di, self.do, self.dropout
+            self.pc, self.di, self.do, dropout=self.dropout
         )
         # Initialize computation graph
         dy.renew_cg()
@@ -43,7 +43,7 @@ class TestGatedLayer(TestCase):
     def test_forward_backward(self):
         # Create layer
         gated = dense_layers.GatedLayer(
-            self.pc, self.di, self.do, self.dropout
+            self.pc, self.di, self.do, dropout=self.dropout
         )
         # Initialize computation graph
         dy.renew_cg()
