@@ -284,14 +284,15 @@ def transduce_lstm(lstm, xs, h0, c0, lengths=None, backward=False):
 
 
 def transduce_bilstm(
-        lstm_forward,
-        lstm_backward,
-        xs,
-        h0_fwd,
-        c0_fwd,
-        h0_bwd,
-        c0_bwd,
-        lengths=None):
+    lstm_forward,
+    lstm_backward,
+    xs,
+    h0_fwd,
+    c0_fwd,
+    h0_bwd,
+    c0_bwd,
+    lengths=None
+):
     """Helper function for biLSTM transduction with masking
 
     Args:
