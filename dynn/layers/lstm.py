@@ -35,7 +35,7 @@ class NaryTreeLSTMCell(BaseLayer):
         dropout=0.0,
         diagonal=False,
     ):
-        super(NaryTreeLSTMCell, self).__init__(pc, "{arity}-treelstm")
+        super(NaryTreeLSTMCell, self).__init__(pc, f"{arity}-treelstm")
         # Arity
         self.arity = arity
         assert self.arity >= 0, f"Arity {self.arity} not supported"
