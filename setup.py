@@ -15,6 +15,7 @@ setup(
     license="MIT License",
     description="Neural networks routines for DyNet",
     long_description=README,
+    long_description_content_type='text/markdown',
     url="https://github.com/pmichel31415/dynn",
     author="Paul Michel",
     author_email="pmichel1@cs.cmu.edu",
