@@ -14,8 +14,10 @@
 #
 import os
 import sys
+import shutil
 
-from sphinx import apidoc
+os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
+from sphinx import apidoc  # noqa
 
 # Add dynn to path
 dynn_path = os.path.join(os.path.dirname(__file__), "../../dynn")
@@ -35,7 +37,10 @@ release = "0.1"
 
 # -- API doc -----------------------------------------------------------------
 
+
 output_path = os.path.join(".", "api")
+shutil.rmtree(output_path)
+os.mkdir(output_path)
 apidoc.main(["-e", "-f", "-H", project, "-o",
              output_path, os.path.abspath(dynn_path)])
 
