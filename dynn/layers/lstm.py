@@ -184,9 +184,9 @@ class CompactLSTM(BaseLayer):
 
     def init(self, test=False, update=True):
         # Load weights in computation graph
-        self.Whx = self.Whx.expr(update)
-        self.Whh = self.Whh.expr(update)
-        self.bh = self.bh.expr(update)
+        self.Whx = self.Whx_p.expr(update)
+        self.Whh = self.Whh_p.expr(update)
+        self.bh = self.bh_p.expr(update)
         # Initialize dropout mask
         self.test = test
         if not test and self.dropout > 0:

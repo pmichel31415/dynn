@@ -33,9 +33,9 @@ class ElmanRNN(BaseLayer):
 
     def init(self, test=False, update=True):
         # Load weights in computation graph
-        self.Whx = self.Whx_p if update else dy.const_parameter(self.Whx_p)
-        self.Whh = self.Whh_p if update else dy.const_parameter(self.Whh_p)
-        self.bh = self.bh_p if update else dy.const_parameter(self.bh_p)
+        self.Whx = self.Whx_p.expr()
+        self.Whh = self.Whh_p.expr()
+        self.bh = self.bh_p.expr()
         # Initialize dropout mask
         self.test = test
         if not test and self.dropout > 0:
