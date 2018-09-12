@@ -87,14 +87,14 @@ class NaryTreeLSTMCell(BaseLayer):
 
     def init(self, test=False, update=True):
         # Load weights in computation graph
-        self.Wi = self.Wi_p if update else dy.const_parameter(self.Wi_p)
-        self.Wo = self.Wo_p if update else dy.const_parameter(self.Wo_p)
-        self.Wg = self.Wg_p if update else dy.const_parameter(self.Wg_p)
+        self.Wi = self.Wi_p.expr(update)
+        self.Wo = self.Wo_p.expr(update)
+        self.Wg = self.Wg_p.expr(update)
         self.Wf = [w.expr(update) for w in self.Wf_p]
         # Load biases in computation graph
-        self.bi = self.bi_p if update else dy.const_parameter(self.bi_p)
-        self.bo = self.bo_p if update else dy.const_parameter(self.bo_p)
-        self.bg = self.bg_p if update else dy.const_parameter(self.bg_p)
+        self.bi = self.bi_p.expr(update)
+        self.bo = self.bo_p.expr(update)
+        self.bg = self.bg_p.expr(update)
         self.bf = [w.expr(update) for w in self.bf_p]
         # Initialize dropout mask
         self.test = test
@@ -184,9 +184,9 @@ class CompactLSTM(BaseLayer):
 
     def init(self, test=False, update=True):
         # Load weights in computation graph
-        self.Whx = self.Whx_p if update else dy.const_parameter(self.Whx_p)
-        self.Whh = self.Whh_p if update else dy.const_parameter(self.Whh_p)
-        self.bh = self.bh_p if update else dy.const_parameter(self.bh_p)
+        self.Whx = self.Whx.expr(update)
+        self.Whh = self.Whh.expr(update)
+        self.bh = self.bh.expr(update)
         # Initialize dropout mask
         self.test = test
         if not test and self.dropout > 0:

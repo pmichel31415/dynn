@@ -51,9 +51,9 @@ class DenseLayer(BaseLayer):
                 (default: ``True``)
         """
 
-        self.W = self.W_p if update else dy.const_parameter(self.W_p)
+        self.W = self.W_p.expr(update)
         if not self.nobias:
-            self.b = self.b_p if update else dy.const_parameter(self.b_p)
+            self.b = self.b_p.expr(update)
 
         self.test = test
 
@@ -128,11 +128,11 @@ class GatedLayer(BaseLayer):
             update (bool, optional): Whether to update the parameters
                 (default: ``True``)
         """
-        self.Wo = self.Wo_p if update else dy.const_parameter(self.Wo_p)
-        self.bo = self.bo_p if update else dy.const_parameter(self.bo_p)
+        self.Wo = self.Wo_p.expr(update)
+        self.bo = self.bo_p.expr(update)
 
-        self.Wg = self.Wg_p if update else dy.const_parameter(self.Wg_p)
-        self.bg = self.bg_p if update else dy.const_parameter(self.bg_p)
+        self.Wg = self.Wg_p.expr(update)
+        self.bg = self.bg_p.expr(update)
 
         self.test = test
 
