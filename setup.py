@@ -18,7 +18,7 @@ setup(
     url="https://github.com/pmichel31415/dynn",
     author="Paul Michel",
     author_email="pmichel1@cs.cmu.edu",
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
