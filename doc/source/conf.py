@@ -15,6 +15,8 @@
 import os
 import sys
 
+from dynn import __version__ as dynn_version
+
 os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
 from sphinx import apidoc  # noqa
 
@@ -32,7 +34,7 @@ author = "Paul Michel"
 # The short X.Y version
 version = ""
 # The full version, including alpha/beta/rc tags
-release = "0.1"
+release = dynn_version
 
 # -- API doc -----------------------------------------------------------------
 
