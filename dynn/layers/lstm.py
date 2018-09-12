@@ -4,8 +4,8 @@
 import numpy as np
 import dynet as dy
 
-from dynn.layers import BaseLayer
-from dynn.parameter_initialization import ZeroInit, OneInit
+from ..parameter_initialization import ZeroInit, OneInit
+from .base_layer import BaseLayer
 
 
 class NaryTreeLSTMCell(BaseLayer):

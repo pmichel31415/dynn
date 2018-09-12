@@ -2,8 +2,8 @@
 """Standard densely connected layers"""
 import dynet as dy
 
-from dynn.layers import BaseLayer
-from dynn.parameter_initialization import ZeroInit
+from ..parameter_initialization import ZeroInit
+from .base_layer import BaseLayer
 
 
 class DenseLayer(BaseLayer):

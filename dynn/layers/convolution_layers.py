@@ -2,10 +2,10 @@
 """Standard densely connected layers"""
 import dynet as dy
 
-from dynn.layers import BaseLayer
-from dynn.parameter_initialization import ZeroInit
-from dynn.activations import identity
-from dynn.util import matrix_to_image, image_to_matrix
+from ..parameter_initialization import ZeroInit
+from ..activations import identity
+from ..util import matrix_to_image, image_to_matrix
+from .base_layer import BaseLayer
 
 
 class Conv1DLayer(BaseLayer):

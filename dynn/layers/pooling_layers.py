@@ -5,8 +5,8 @@
 from __future__ import print_function, division
 
 import dynet as dy
-from layers import Layer
-import util
+from .. import util
+from .base_layer import BaseLayer
 
 
 def max_pool_dim(x, d=0, kernel_width=None, stride=1):
@@ -35,7 +35,7 @@ def max_pool_dim(x, d=0, kernel_width=None, stride=1):
     return output
 
 
-class MaxPooling1DLayer(Layer):
+class MaxPooling1DLayer(BaseLayer):
     """1D max pooling
 
     Args:
