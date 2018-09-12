@@ -1,11 +1,14 @@
 language: python
 python:
-  - "3.6"
-  - "3.6-dev"  # 3.6 development branch
-# command to install dependencies
+- "3.6"
+- 3.6-dev
 install:
-  - pip install -r requirements.txt
-  - python setup.py install
-# command to run tests
+- pip install -r requirements.txt
+- python setup.py install
 script:
-  - pytest
+- pytest
+deploy:
+  provider: pypi
+  user: pmichel31415
+  password:
+    secure: pCKRf431VM1yAHQg9JApXE+2q55rdOYmJ1QWUKPO1r1dGCluNQZbVFU8K2AFTru0r7IN+K7oOWr0NSJM3JBhojaa1Vl7uRocLwnH6llrFJei6jgQhMElkSqMRaQXUSn0wFoG1XpwXFsdumaBN6X/5j4XNWs6wIEwH7fRsNiVNwABOJ9Cavy1t5cU8rsAfCZmpslkfkH0OJUvwWlcSyBBSvu946t8ht/E17u3aboGaSYyOdIZmS+nfX3eOOu5e/gg4e80qwgEIWusvQsJGyeyRwT+5bMqYlooV9cPjQzK7LkjY3n0xVYldtxDl/CL04RZb5ArflWIsipgi8wV/hCd/w24UP+beKox8fGVnzrTQrfKkX1VzqkssrrYisaG4btJNqaqe8PVLWC4Ht5IyY+sDNcJ0nfgH4XtNgtMkVDQG1S34Rj+JYLQnQR32Mlbw7tP/nM9xCYZMnUh+SJ8F93FXxsv4fQG/q4J0vk9E9j8Sev8aXHfAqN9FLYI8THAI5nz7pXYNhrNa8pPtHUsigOtrWTw/C6z8IuZ6zmGteotqGIdRQJQ/EQNqNURDJ6iPwbqLRIFlUd6+ZzoDxFCZi0lKmKhyPJuhplgYgEjptu7qVNNAUB+I7h6KbEB3oIppLHoVBDhyRpbTE/XAFeXjRVvHK42sf+RegiLKJBFoqrs4oM=
