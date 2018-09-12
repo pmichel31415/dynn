@@ -1,5 +1,6 @@
 build:
   image: latest
+requirements_file: "doc/source/requirements.txt"
 # Use python 3.6
 python:
   version: 3.6

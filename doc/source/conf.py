@@ -46,10 +46,8 @@ apidoc.main([
     "--implicit-namespaces",
     "--no-headings",
     "--module-first",
-    "-H",
-    project,
-    "--output-dir",
-    output_path,
+    "-H", project,
+    "-o", output_path,
     os.path.abspath(dynn_path)
 ])
 
@@ -73,6 +71,7 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
+    "sphinxcontrib.napoleon",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
