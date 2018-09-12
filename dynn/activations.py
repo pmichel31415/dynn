@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Common activation functions for neural networks.
+"""
+Activation functions
+====================
+
+Common activation functions for neural networks.
 
 Most of those are wrappers around standard dynet operations
 (eg. relu == rectify)

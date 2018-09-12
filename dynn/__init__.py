@@ -1,3 +1,7 @@
+"""
+DyNN
+====
+"""
 from . import layers
 from . import activations
 from . import parameter_initialization

@@ -1,24 +1,12 @@
 #!/usr/bin/env python3
+"""
+Base layer
+==========
+"""
 
 
 class BaseLayer(object):
-    """Base layer class
-    Layers are typically used like this:
-
-    Example:
-
-        .. code-block:: python
-
-            # Instantiate layer
-            layer = Layer(parameter_collection, *args, **kwargs)
-            # [...]
-            # Renew computation graph
-            dy.renew_cg()
-            # Initialize layer
-            layer.init(*args, **kwargs)
-            # Apply layer forward pass
-            y = layer(x)
-    """
+    """Base layer interface"""
 
     def __init__(self, pc, name):
         """Creates a subcollection for this layer with a custom name"""

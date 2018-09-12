@@ -29,7 +29,7 @@ class ElmanRNN(BaseLayer):
         self.Whh_p = self.pc.add_parameters(
             (self.dh, self.dh), name='Whh', init=NormalInit(scale_whh))
         self.bh_p = self.pc.add_parameters(
-            (self.dh,), name='bh', init=ZeroInit)
+            (self.dh,), name='bh', init=ZeroInit())
 
     def init(self, test=False, update=True):
         # Load weights in computation graph

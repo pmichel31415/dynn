@@ -73,14 +73,14 @@ class NaryTreeLSTMCell(BaseLayer):
         ]
         # Biases
         self.bi_p = self.pc.add_parameters(
-            self.dh, name="bi", init=ZeroInit)
+            self.dh, name="bi", init=ZeroInit())
         self.bo_p = self.pc.add_parameters(
-            self.dh, name="bo", init=ZeroInit)
+            self.dh, name="bo", init=ZeroInit())
         self.bg_p = self.pc.add_parameters(
-            self.dh, name="bg", init=ZeroInit)
+            self.dh, name="bg", init=ZeroInit())
         self.bf_p = [
             self.pc.add_parameters(
-                self.dh, name=f"bf{i}", init=OneInit
+                self.dh, name=f"bf{i}", init=OneInit()
             )
             for i in range(self.arity)
         ]
@@ -179,7 +179,7 @@ class CompactLSTM(BaseLayer):
             init=dy.UniformInitializer(scale)
         )
         self.bh_p = self.pc.add_parameters(
-            (self.dh * 4,), name="bh", init=ZeroInit
+            (self.dh * 4,), name="bh", init=ZeroInit()
         )
 
     def init(self, test=False, update=True):

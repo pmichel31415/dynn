@@ -14,7 +14,6 @@
 #
 import os
 import sys
-import shutil
 
 os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
 from sphinx import apidoc  # noqa
@@ -39,10 +38,18 @@ release = "0.1"
 
 
 output_path = os.path.join(".", "api")
-shutil.rmtree(output_path)
-os.mkdir(output_path)
-apidoc.main(["-e", "-f", "-H", project, "-o",
-             output_path, os.path.abspath(dynn_path)])
+apidoc.main([
+    "--separate",
+    "--force",
+    "--implicit-namespaces",
+    "--no-headings",
+    "--module-first",
+    "-H",
+    project,
+    "--output-dir",
+    output_path,
+    os.path.abspath(dynn_path)
+])
 
 
 # -- General configuration ---------------------------------------------------

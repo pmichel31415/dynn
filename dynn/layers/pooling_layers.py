@@ -1,5 +1,8 @@
-# -*- coding: utf-8 -*-
-"""Pooling layers"""
+#!/usr/bin/env python3
+"""
+Pooling layers
+==============
+"""
 
 
 from __future__ import print_function, division

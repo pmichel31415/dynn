@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Normalization layers"""
+"""
+Normalization layers
+====================
+"""
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit, OneInit
@@ -23,9 +26,9 @@ class LayerNormalization(BaseLayer):
         self.input_dim = input_dim
         # Initialize bias and gain parameters
         self.gain_p = self.pc.add_parameters(
-            input_dim, name="gain", init=OneInit)
+            input_dim, name="gain", init=OneInit())
         self.bias_p = self.pc.add_parameters(
-            input_dim, name="bias", init=ZeroInit)
+            input_dim, name="bias", init=ZeroInit())
 
     def init(self, update=True):
         """Initialize the layer before performing computation

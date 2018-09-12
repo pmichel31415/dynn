@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Standard densely connected layers"""
+"""
+Convolution layers
+==================
+"""
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit
@@ -47,7 +50,8 @@ class Conv1DLayer(BaseLayer):
         self.K_p = self.pc.add_parameters(
             (self.di, self.kw, 1, self.nk), name='K')
         if not self.nobias:
-            self.b_p = self.pc.add_parameters(self.nk, name='b', init=ZeroInit)
+            self.b_p = self.pc.add_parameters(
+                self.nk, name='b', init=ZeroInit())
         # Dropout
         self.dropout = dropout
         # Activation function

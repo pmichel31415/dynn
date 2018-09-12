@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Standard densely connected layers"""
+"""
+Densely connected layers
+========================
+"""
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit
@@ -35,7 +38,7 @@ class DenseLayer(BaseLayer):
         self.W_p = self.pc.add_parameters((output_dim, input_dim), name="W")
         if not nobias:
             self.b_p = self.pc.add_parameters(
-                output_dim, name="b", init=ZeroInit)
+                output_dim, name="b", init=ZeroInit())
 
         self.dropout = dropout
         self.nobias = nobias
@@ -111,12 +114,12 @@ class GatedLayer(BaseLayer):
         # Affine layer parameters
         self.Wo_p = self.pc.add_parameters((output_dim, input_dim), name="Wo")
         self.bo_p = self.pc.add_parameters(
-            output_dim, name="bo", init=ZeroInit
+            output_dim, name="bo", init=ZeroInit()
         )
         # Gating layer parameters
         self.Wg_p = self.pc.add_parameters((output_dim, input_dim), name="Wg")
         self.bg_p = self.pc.add_parameters(
-            output_dim, name="bg", init=ZeroInit
+            output_dim, name="bg", init=ZeroInit()
         )
 
     def init(self, test=False, update=True):
