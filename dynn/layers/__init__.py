@@ -2,7 +2,7 @@
 Layers
 ======
 
-Layers are the standard unit of neural models in DyNN. Layers are typically 
+Layers are the standard unit of neural models in DyNN. Layers are typically
 used like this:
 
 .. code-block:: python
