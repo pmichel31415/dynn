@@ -42,10 +42,10 @@ class MaxPooling1DLayer(BaseLayer):
     """1D max pooling
 
     Args:
-        pc (dynet.ParameterCollection): Parameter collection to
-        hold the parameters
+        pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
+            hold the parameters
         kernel_width (int, optional): Kernel width. If this is not specified,
-        the default is to pool over the full sequence (default: ``None``)
+            the default is to pool over the full sequence (default: ``None``)
         stride (int, optional): Temporal stride (default: ``1``)
     """
 
@@ -62,11 +62,11 @@ class MaxPooling1DLayer(BaseLayer):
         """Forward pass
 
         Args:
-            x (dynet.Expression): Input expression with the shape
-            (length, input_dim)
+            x (:py:class:`dynet.Expression`): Input expression with the shape
+                (length, input_dim)
 
         Returns:
-            dynet.Expression: Vector of size input_dim
+            :py:class:`dynet.Expression`: Vector of size input_dim
         """
         # Max-pooling
         self.h = max_pool_dim(

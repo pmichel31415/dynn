@@ -15,12 +15,12 @@ class DenseLayer(BaseLayer):
     :math:`y=f(Wx+b)`
 
     Args:
-        pc (dynet.ParameterCollection): Parameter collection to
-        hold the parameters
+        pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
+            hold the parameters
         input_dim (int): Input dimension
         output_dim (int): Output dimension
         activation (function, optional): activation function
-        (default: ``dynet.tanh``)
+            (default: :py:class:`dynet.tanh`)
         dropout (float, optional):  Dropout rate (default 0)
         nobias (bool, optional): Omit the bias (default ``False``)
     """
@@ -49,9 +49,9 @@ class DenseLayer(BaseLayer):
 
         Args:
             test (bool, optional): If test mode is set to ``True``,
-            dropout is not applied (default: ``True``)
+                dropout is not applied (default: ``True``)
             update (bool, optional): Whether to update the parameters
-            (default: ``True``)
+                (default: ``True``)
         """
 
         self.W = self.W_p.expr(update)
@@ -64,10 +64,10 @@ class DenseLayer(BaseLayer):
         """Forward pass
 
         Args:
-            x (dynet.Expression): Input expression (a vector)
+            x (:py:class:`dynet.Expression`): Input expression (a vector)
 
         Returns:
-            dynet.Expression: :math:`y=f(Wx+b)`
+            :py:class:`dynet.Expression`: :math:`y=f(Wx+b)`
         """
         # Dropout
         if not self.test and self.dropout > 0:
@@ -88,12 +88,12 @@ class GatedLayer(BaseLayer):
     :math:`y=(W_ox+b_o)\circ \sigma(W_gx+b_g)`
 
     Args:
-        pc (dynet.ParameterCollection): Parameter collection to
-        hold the parameters
+        pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
+            hold the parameters
         input_dim (int): Input dimension
         output_dim (int): Output dimension
         activation (function, optional): activation function
-        (default: ``dynet.tanh``)
+            (default: :py:class:`dynet.tanh`)
         dropout (float, optional):  Dropout rate (default 0)
     """
 
@@ -127,9 +127,9 @@ class GatedLayer(BaseLayer):
 
         Args:
             test (bool, optional): If test mode is set to ``True``,
-            dropout is not applied (default: ``True``)
+                dropout is not applied (default: ``True``)
             update (bool, optional): Whether to update the parameters
-            (default: ``True``)
+                (default: ``True``)
         """
         self.Wo = self.Wo_p.expr(update)
         self.bo = self.bo_p.expr(update)
@@ -143,10 +143,11 @@ class GatedLayer(BaseLayer):
         """Forward pass
 
         Args:
-            x (dynet.Expression): Input expression (a vector)
+            x (:py:class:`dynet.Expression`): Input expression (a vector)
 
         Returns:
-            dynet.Expression: :math:`y=(W_ox+b_o)\circ \sigma(W_gx+b_g)`
+            :py:class:`dynet.Expression`:
+                :math:`y=(W_ox+b_o)\circ \sigma(W_gx+b_g)`
         """
 
         # Output

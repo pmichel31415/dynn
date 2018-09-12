@@ -16,8 +16,8 @@ class LayerNormalization(BaseLayer):
 
     Args:
         input_dim (int): Input dimension
-        pc (dynet.ParameterCollection): Parameter collection to
-        hold the parameters
+        pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
+            hold the parameters
     """
 
     def __init__(self, input_dim, pc):
@@ -35,7 +35,7 @@ class LayerNormalization(BaseLayer):
 
         Args:
             update (bool, optional): Whether to update the parameters
-            (default: ``True``)
+                (default: ``True``)
         """
         self.gain = self.gain_p.expr(update)
         self.bias = self.bias_p.expr(update)
@@ -44,10 +44,11 @@ class LayerNormalization(BaseLayer):
         """Layer-normalize the input
 
         Args:
-            x (dynet.Expression): Input expression
+            x (:py:class:`dynet.Expression`): Input expression
 
         Returns:
-            dynet.Expression: :math:`y=\\frac{g}{\sigma(x)}\cdot(x-\mu(x)+b)`
+            :py:class:`dynet.Expression`:
+                :math:`y=\\frac{g}{\sigma(x)}\cdot(x-\mu(x)+b)`
         """
 
         # Output

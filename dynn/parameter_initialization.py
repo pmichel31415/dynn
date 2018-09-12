@@ -4,7 +4,7 @@ Parameter initialization
 ========================
 
 Some of those are just less verbose versions of
-dynet's ``ParameterInitializer`` s
+dynet's ``PyInitializer`` s
 """
 import numpy as np
 import dynet as dy
@@ -14,7 +14,7 @@ def OneInit():
     """Initialize with :math:`1`
 
     Returns:
-        dynet.ParameterInitializer: dy.ConstInitializer(1)
+        :py:class:`dynet.PyInitializer`: ``dy.ConstInitializer(1)``
     """
 
     return dy.ConstInitializer(1)
@@ -24,7 +24,7 @@ def ZeroInit():
     """Initialize with :math:`0`
 
     Returns:
-        dynet.ParameterInitializer: dy.ConstInitializer(0)
+        :py:class:`dynet.PyInitializer`: dy.ConstInitializer(0)
     """
     return dy.ConstInitializer(0)
 
@@ -36,7 +36,8 @@ def UniformInit(scale=1.0):
         scale (float): Scale of the distribution
 
     Returns:
-        dynet.ParameterInitializer: ``dy.UniformInitializer(scale)``
+        :py:class:`dynet.PyInitializer`:
+            ``dy.UniformInitializer(scale)``
     """
 
     return dy.UniformInitializer(scale)
@@ -48,10 +49,11 @@ def NormalInit(mean=0, std=1):
     Args:
         mean (int, optional): Mean (default: 0.0)
         std (int, optional): Standard deviation (:math:`\\neq` variance)
-        (default: 1.0)
+            (default: 1.0)
 
     Returns:
-        dynet.ParameterInitializer: ``dy.NormalInitializer(mean, sqrt(std))``
+        :py:class:`dynet.PyInitializer`:
+            ``dy.NormalInitializer(mean, sqrt(std))``
     """
 
     return dy.NormalInitializer(mean, np.sqrt(std))
