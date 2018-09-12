@@ -105,6 +105,3 @@ ENV/
 
 # IDEA
 .IDEA/
-
-# Autodoc
-doc/api/*
