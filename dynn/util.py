@@ -47,7 +47,7 @@ def conditional_dropout(x, dropout_rate, flag):
         x (dynet.Expression): Input expression
         dropout_rate (float): Dropout rate
         flag (bool): Setting this to false ensures that dropout
-            is never applied (for testing for example)
+        is never applied (for testing for example)
     """
     if dropout_rate > 0 and flag:
         return dy.dropout(x, dropout_rate)

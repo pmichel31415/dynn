@@ -7,10 +7,10 @@ Welcome to DyNN's documentation!
 ================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
-
-
+   
+   api/dynn
 
 Indices and tables
 ==================

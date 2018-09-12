@@ -12,9 +12,14 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+
+from sphinx import apidoc
+
+# Add dynn to path
+dynn_path = os.path.join(os.path.dirname(__file__), '../../dynn')
+sys.path.insert(0, os.path.abspath(dynn_path))
 
 
 # -- Project information -----------------------------------------------------
@@ -27,6 +32,11 @@ author = 'Paul Michel'
 version = ''
 # The full version, including alpha/beta/rc tags
 release = '0.1'
+
+# -- API doc -----------------------------------------------------------------
+
+output_path = os.path.join(".", 'api')
+apidoc.main(['-e', '-f', '-o', output_path, os.path.abspath(dynn_path)])
 
 
 # -- General configuration ---------------------------------------------------
