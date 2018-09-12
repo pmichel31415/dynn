@@ -14,7 +14,7 @@ class LayerNormalization(BaseLayer):
     Args:
         input_dim (int): Input dimension
         pc (dynet.ParameterCollection): Parameter collection to
-            hold the parameters
+        hold the parameters
     """
 
     def __init__(self, input_dim, pc):
@@ -32,7 +32,7 @@ class LayerNormalization(BaseLayer):
 
         Args:
             update (bool, optional): Whether to update the parameters
-                (default: ``True``)
+            (default: ``True``)
         """
         self.gain = self.gain_p.expr(update)
         self.bias = self.bias_p.expr(update)

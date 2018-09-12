@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""This contains initializers
 
-Some of those are just less verbose versions of
-dynet's ``ParameterInitializer``s
-"""
 import numpy as np
 import dynet as dy
 

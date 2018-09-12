@@ -13,11 +13,11 @@ class DenseLayer(BaseLayer):
 
     Args:
         pc (dynet.ParameterCollection): Parameter collection to
-            hold the parameters
+        hold the parameters
         input_dim (int): Input dimension
         output_dim (int): Output dimension
         activation (function, optional): activation function
-            (default: ``dynet.tanh``)
+        (default: ``dynet.tanh``)
         dropout (float, optional):  Dropout rate (default 0)
         nobias (bool, optional): Omit the bias (default ``False``)
     """
@@ -46,9 +46,9 @@ class DenseLayer(BaseLayer):
 
         Args:
             test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
+            dropout is not applied (default: ``True``)
             update (bool, optional): Whether to update the parameters
-                (default: ``True``)
+            (default: ``True``)
         """
 
         self.W = self.W_p.expr(update)
@@ -86,11 +86,11 @@ class GatedLayer(BaseLayer):
 
     Args:
         pc (dynet.ParameterCollection): Parameter collection to
-            hold the parameters
+        hold the parameters
         input_dim (int): Input dimension
         output_dim (int): Output dimension
         activation (function, optional): activation function
-            (default: ``dynet.tanh``)
+        (default: ``dynet.tanh``)
         dropout (float, optional):  Dropout rate (default 0)
     """
 
@@ -124,9 +124,9 @@ class GatedLayer(BaseLayer):
 
         Args:
             test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
+            dropout is not applied (default: ``True``)
             update (bool, optional): Whether to update the parameters
-                (default: ``True``)
+            (default: ``True``)
         """
         self.Wo = self.Wo_p.expr(update)
         self.bo = self.bo_p.expr(update)

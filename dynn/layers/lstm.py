@@ -13,17 +13,17 @@ class NaryTreeLSTMCell(BaseLayer):
 
     Args:
         arity (int): Number of hidden children not counting the input
-            (eg. a standard LSTM is a unary TreeLSTM)
+        (eg. a standard LSTM is a unary TreeLSTM)
         input_dim (int): Input dimension
-            (it is assumed that all inputs have the same dimension)
+        (it is assumed that all inputs have the same dimension)
         hidden_dim (int): Hidden dimension (also the output dimension)
         pc (dynet.ParameterCollection): Parameter collection to
-            hold the parameters
+        hold the parameters
         dropout (float, optional):  Dropout rate (default 0)
         diagonal(bool, optional): If set to true, the forget gate for
-            child i will only be computed based on this children's state
-            at the previous step (vs all other children's previous states).
-            This reduces the number of parameters [description]
+        child i will only be computed based on this children's state
+        at the previous step (vs all other children's previous states).
+        This reduces the number of parameters
     """
 
     def __init__(
@@ -246,13 +246,13 @@ def transduce_lstm(lstm, xs, h0, c0, lengths=None, backward=False):
 
     Args:
         lstm ([type]): LSTM cell
-        xs ([type]): List of input expressions
-        h0 ([type]): Initial h state
-        c0 ([type]): Initial c state
-        lengths ([type], optional): List of lengths of all the input sequences
-            in the minibatch (for masking)
+        xs (list): List of input expressions
+        h0 (dynet.Expression): Initial h state
+        c0 (dynet.Expression): Initial c state
+        lengths (list, optional): List of lengths of all the input sequences
+        in the minibatch (for masking)
         backward (bool, optional): Do backward transduction
-            (with appropriate masking)
+        (with appropriate masking)
 
     Returns:
         list: lsit of output state (in the same order as the input)
@@ -304,11 +304,11 @@ def transduce_bilstm(
         h0_bwd (dynet.Expression): Initial state h of the backward pass
         c0_bwd (dynet.Expression): Initial state c of the backward pass
         lengths (list, optional): List of lengths of all the input sequences
-            in the minibatch (for masking)
+        in the minibatch (for masking)
 
     Returns:
         tuple: hs_fwd, hs_bwd: list of output states of the forward
-            and backward pass
+        and backward pass
     """
 
     hs_fwd = transduce_lstm(

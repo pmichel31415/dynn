@@ -16,9 +16,9 @@ class Conv1DLayer(BaseLayer):
         num_kernels (int): Number of kernels (essentially the output dimension)
         kernel_width (int): Width of the kernels
         pc (dynet.ParameterCollection): Parameter collection to
-            hold the parameters
+    hold the parameters
         activation (function, optional): activation function
-            (default: ``identity``)
+    (default: ``identity``)
         dropout (float, optional):  Dropout rate (default 0)
         nobias (bool, optional): Omit the bias (default ``False``)
         strides (int, optional): Stride along the temporal dimension
@@ -58,9 +58,9 @@ class Conv1DLayer(BaseLayer):
 
         Args:
             test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
+            dropout is not applied (default: ``True``)
             update (bool, optional): Whether to update the parameters
-                (default: ``True``)
+            (default: ``True``)
         """
         # Initialize parameters
         self.K = self.K_p.expr(update)
@@ -74,7 +74,7 @@ class Conv1DLayer(BaseLayer):
 
         Args:
             x (dynet.Expression): Input expression with the shape
-                (length, input_dim)
+            (length, input_dim)
 
         Returns:
             dynet.Expression: :math:`y=f(Wx+b)`
