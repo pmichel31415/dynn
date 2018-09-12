@@ -1,7 +1,4 @@
 language: python
-os:
-- linux
-- osx
 python:
 - "3.6"
 install:
@@ -14,3 +11,6 @@ deploy:
   user: pmichel31415
   password:
     secure: "d/Bg+58pp6Uo6orTeq7xkZNDIbYMiNWN+Ca7YHJbc3fU1+zc0OSPX6Wc4ACka9U67sN9bZN+6V61eU/y8V/DORZZwIBghoDdRAIX8SYjaDu27b4SARX5rEiqLRxuxZcpIBPSAWeB0V1kk0cxMiKKWcg1oScubJnY2Ln8WuAwmiDo4js+gfH5Whh+GbhRI3TJXinjf1k8xoXreGNOG3lI+whBK+a12CHiQ77n/TWrGH6Q7lCnM76TU0MA7m/UVBmmataocurYq8WSHRxnqQ51AEjleoa6f4pdGOomDiUzqSaHI2Qiqa7PHbqXm9onBJQe5U4NH1dJSB0KqnSKMQrosHgQdAZ9UDgWFpGZ19noaIz1pkV2KXPWZykTJmp9YGR0JKun8NewRP6gFpoMrRZseg85zgLKFR+sj3RPwgD8uwssiyrWFz3MvSiIMSPKgvYs4akt26Ai8e+1wO8iIHyCSibn0GkF3TRokfidhQ3DVq1UI0lPQK43FMDEjL9RvsgqcdPi63ZoIEjkfavmujozFCXk3KAqQFnuzD9XSlL4URsp8YEB6xUUu+BJaW5oo0weF2rMsEB6HEff8vw8LWnnX1qct43PhjqwiAv5l6W35iI7/12Wd7BlMX5twADvxMqeQCLtyG9Ua85aHdRXrZVS8HYhvMQgosX0GLWFaNxMOgo="
+  on:
+    repo: pmichel31415/dynn
+    tags: true
