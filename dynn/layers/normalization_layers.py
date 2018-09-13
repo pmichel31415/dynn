@@ -6,10 +6,10 @@ Normalization layers
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit, OneInit
-from .base_layer import BaseLayer
+from .base_layers import ParametrizedLayer
 
 
-class LayerNormalization(BaseLayer):
+class LayerNormalization(ParametrizedLayer):
     """Layer normalization layer:
 
     :math:`y=\\frac{g}{\sigma(x)}\cdot(x-\mu(x)+b)`

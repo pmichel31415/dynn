@@ -6,10 +6,10 @@ Densely connected layers
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit
-from .base_layer import BaseLayer
+from .base_layers import ParametrizedLayer
 
 
-class DenseLayer(BaseLayer):
+class DenseLayer(ParametrizedLayer):
     """Densely connected layer
 
     :math:`y=f(Wx+b)`
@@ -82,7 +82,7 @@ class DenseLayer(BaseLayer):
         return self.h
 
 
-class GatedLayer(BaseLayer):
+class GatedLayer(ParametrizedLayer):
     """Gated linear layer:
 
     :math:`y=(W_ox+b_o)\circ \sigma(W_gx+b_g)`
@@ -158,7 +158,7 @@ class GatedLayer(BaseLayer):
         return dy.cmult(self.g, self.o)
 
 
-class StackedLayers(BaseLayer):
+class StackedLayers(ParametrizedLayer):
     """Helper class to stack layers"""
 
     def __init__(self, *args):

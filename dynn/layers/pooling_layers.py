@@ -9,7 +9,7 @@ from __future__ import print_function, division
 
 import dynet as dy
 from .. import util
-from .base_layer import BaseLayer
+from .base_layers import BaseLayer
 
 
 def max_pool_dim(x, d=0, kernel_width=None, stride=1):
@@ -42,15 +42,13 @@ class MaxPooling1DLayer(BaseLayer):
     """1D max pooling
 
     Args:
-        pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
-            hold the parameters
         kernel_width (int, optional): Kernel width. If this is not specified,
             the default is to pool over the full sequence (default: ``None``)
         stride (int, optional): Temporal stride (default: ``1``)
     """
 
-    def __init__(self, pc, kernel_width=None, stride=1):
-        super(MaxPooling1DLayer, self).__init__(pc, 'maxpool1d')
+    def __init__(self, kernel_width=None, stride=1):
+        super(MaxPooling1DLayer, self).__init__("maxpool1d")
         # Hyper-parameter
         self.kernel_width = kernel_width
         self.stride = stride

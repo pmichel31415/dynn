@@ -8,10 +8,10 @@ import dynet as dy
 from ..parameter_initialization import ZeroInit
 from ..activations import identity
 from ..util import matrix_to_image, image_to_matrix
-from .base_layer import BaseLayer
+from .base_layers import ParametrizedLayer
 
 
-class Conv1DLayer(BaseLayer):
+class Conv1DLayer(ParametrizedLayer):
     """1D convolution
 
     Args:

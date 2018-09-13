@@ -18,18 +18,20 @@ used like this:
     y = layer(x)
 """
 from . import (
-    base_layer,
+    base_layers,
     dense_layers,
-    lstm,
+    recurrent_layers,
+    transduction_layers,
     pooling_layers,
     convolution_layers,
     normalization_layers,
 )
 
 __all__ = [
-    "base_layer",
+    "base_layers",
     "dense_layers",
-    "lstm",
+    "recurrent_layers",
+    "transduction_layers",
     "pooling_layers",
     "convolution_layers",
     "normalization_layers",
