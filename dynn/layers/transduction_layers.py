@@ -12,8 +12,36 @@ from .base_layers import BaseLayer
 
 
 class UnidirectionalLayer(BaseLayer):
+    """Unidirectional transduction layer
+
+    This layer runs a recurrent cell on a sequence of inputs and produces
+    resulting the sequence of recurrent states.
+
+    Example:
+
+    .. code-block:: python
+
+        # LSTM cell
+        lstm_cell = dynn.layers.LSTM(dy.ParameterCollection(), 10, 10)
+        # Transduction layer
+        lstm = dynn.layers.UnidirectionalLayer(lstm_cell)
+        # Inputs
+        dy.renew_cg()
+        xs = [dy.random_uniform(10, batch_size=5) for _ in range(20)]
+        # Initialize layer
+        lstm.init(test=False)
+        # Transduce forward
+        states = lstm(xs)
+        # Retrieve last h
+        h_final = states[-1][0]
+
+    Args:
+        cell (:py:class:`dynn.layers.recurrentl_layers.RecurrentCell`): The
+            recurrent cell to use for transduction
+    """
 
     def __init__(self, cell):
+
         self.cell = cell
 
     def init(self, *args, **kwargs):
