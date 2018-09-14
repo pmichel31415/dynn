@@ -36,7 +36,7 @@ class UnidirectionalLayer(BaseLayer):
         h_final = states[-1][0]
 
     Args:
-        cell (:py:class:`dynn.layers.recurrentl_layers.RecurrentCell`): The
+        cell (:py:class:`recurrent_layers.RecurrentCell`): The
             recurrent cell to use for transduction
     """
 
@@ -125,3 +125,100 @@ class UnidirectionalLayer(BaseLayer):
             output_sequence.append(state)
 
         return output_sequence
+
+
+class BidirectionalLayer(BaseLayer):
+    """Bidirectional transduction layer
+
+    This layer runs a recurrent cell on in each direction on a sequence of
+    inputs and produces resulting the sequence of recurrent states.
+
+    Example:
+
+    .. code-block:: python
+
+        # Parameter collection
+        pc = dy.ParameterCollection()
+        # LSTM cell
+        fwd_lstm_cell = dynn.layers.LSTM(pc, 10, 10)
+        bwd_lstm_cell = dynn.layers.LSTM(pc, 10, 10)
+        # Transduction layer
+        bilstm = dynn.layers.BidirectionalLayer(fwd_lstm_cell, bwd_lstm_cell)
+        # Inputs
+        dy.renew_cg()
+        xs = [dy.random_uniform(10, batch_size=5) for _ in range(20)]
+        # Initialize layer
+        bilstm.init(test=False)
+        # Transduce forward
+        fwd_states, bwd_states = bilstm(xs)
+        # Retrieve last h
+        fwd_h_final = fwd_states[-1][0]
+        # For the backward LSTM the final state is at
+        # the beginning of the sequence (assuming left padding)
+        bwd_h_final = fwd_states[0][0]
+
+    Args:
+        forward_cell (:py:class:`recurrent_layers.RecurrentCell`):The
+            recurrent cell to use for forward transduction
+        backward_cell (:py:class:`recurrent_layers.RecurrentCell`): The
+            recurrent cell to use for backward transduction
+    """
+
+    def __init__(self, forward_cell, backward_cell):
+        self.forward_transductor = UnidirectionalLayer(forward_cell)
+        self.backward_transductor = UnidirectionalLayer(backward_cell)
+
+    def init(self, *args, **kwargs):
+        """Passes its arguments to the recurrent layers"""
+        self.forward_transductor.init(*args, **kwargs)
+        self.backward_transductor.init(*args, **kwargs)
+
+    def __call__(
+        self,
+        input_sequence,
+        lengths=None,
+        left_padded=True
+    ):
+        """Transduces the sequence in both directions
+
+        The output is a tuple ``forward_states, backward_states``  where each
+        ``forward_states`` is a list of the output states of the forward
+        recurrent cell at each step (and ``backward_states`` for the backward
+        cell). For instance in a BiLSTM the output is
+        ``[(fwd_h1, fwd_c1), ...], [(bwd_h1, bwd_c1), ...]``
+
+        This assumes that all the input expression have the same batch size.
+        If you batch sentences of the same length together you should pad to
+        the longest sequence.
+
+        Args:
+            input_sequence (list): Input as a list of
+                :py:class:`dynet.Expression` objects
+            lengths (list, optional): If the expressions in the sequence are
+                batched, but have different lengths, this should contain a list
+                of the sequence lengths (default: ``None``)
+            left_padded (bool, optional): If the input sequences have different
+                lengths they must be padded to the length of longest sequence.
+                Use this to specify whether the sequence is left or right
+                padded.
+
+        Returns:
+            tuple: List of forward and backward recurrent states
+                (depends on the recurrent layer)
+        """
+
+        # Forward transduction
+        forward_states = self.forward_transductor(
+            input_sequence,
+            lengths=lengths,
+            backward=False,
+            left_padded=left_padded
+        )
+        # Backward transduction
+        backward_states = self.backward_transductor(
+            input_sequence,
+            lengths=lengths,
+            backward=True,
+            left_padded=left_padded
+        )
+        return forward_states, backward_states
