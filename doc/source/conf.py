@@ -17,7 +17,12 @@ import sys
 
 from dynn import __version__ as dynn_version
 
-os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
+sphinx_apidoc_options = [
+    "members",
+    "show-inheritance",
+    "special-members"
+]
+os.environ["SPHINX_APIDOC_OPTIONS"] = ",".join(sphinx_apidoc_options)
 from sphinx import apidoc  # noqa
 
 # Add dynn to path
