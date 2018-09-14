@@ -3,12 +3,57 @@
 Sequence transduction layers
 ============================
 
-Sequence transduction layers take in a sequence of expression and transduces
-them using recurrent layers
+Sequence transduction layers take in a sequence of expression and runs one
+layer over each input. They can be feed-forward (each input is treated
+independently, eg. :py:class:`FeedForwardTransductionLayer`) or recurrent
+(the output at one step depends on the output at the previous step, eg.
+:py:class:`UnidirectionalLayer`).
 """
 
 from ..util import _generate_mask, _should_mask, mask_batches
 from .base_layers import BaseLayer
+
+
+class FeedForwardTransductionLayer(BaseLayer):
+    """Feed forward transduction layer
+
+    This layer runs one cell on a sequence of inputs and returns the list of
+    outputs. Calling it is equivalent to calling:
+
+    .. code-block:: python
+
+        [layer(x) for x in input_sequence]
+
+    Args:
+        cell (:py:class:`base_layers.BaseLayer`): The
+            recurrent cell to use for transduction
+    """
+
+    def __init__(self, layer):
+
+        self.layer = layer
+
+    def init(self, *args, **kwargs):
+        """Passes its arguments to the recurrent layer"""
+        self.layer.init(*args, **kwargs)
+
+    def __call__(
+        self,
+        input_sequence,
+    ):
+        """Runs the layer over the input
+
+        The output is a list of the output of the layer at each step
+
+        Args:
+            input_sequence (list): Input as a list of
+                :py:class:`dynet.Expression` objects
+
+        Returns:
+            list: List of recurrent states (depends on the recurrent layer)
+        """
+        output_sequence = [self.layer(x) for x in input_sequence]
+        return output_sequence
 
 
 class UnidirectionalLayer(BaseLayer):

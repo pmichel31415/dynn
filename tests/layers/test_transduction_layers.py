@@ -6,7 +6,34 @@ from unittest import TestCase
 import numpy as np
 import dynet as dy
 
-from dynn.layers import recurrent_layers, transduction_layers
+from dynn.layers import dense_layers, recurrent_layers, transduction_layers
+
+
+class TestFeedForwardTransductionLayer(TestCase):
+
+    def setUp(self):
+        self.pc = dy.ParameterCollection()
+        self.do = 10
+        self.di = 20
+        self.bz = 6
+
+    def test_feedforward_layer_transduction(self):
+        # Simple dense layer
+        dense = dense_layers.DenseLayer(self.pc, self.di, self.do)
+        # Create transduction layer
+        tranductor = transduction_layers.FeedForwardTransductionLayer(dense)
+        # Initialize computation graph
+        dy.renew_cg()
+        # Create inputs
+        seq = [dy.random_uniform(self.di, 0, i, self.bz) for i in range(10)]
+        # Initialize tranductor
+        tranductor.init(test=False, update=True)
+        # Run tranductor
+        outputs = tranductor(seq)
+        # Try forward/backward
+        z = dy.mean_batches(dy.sum_elems(dy.esum(outputs)))
+        z.forward()
+        z.backward()
 
 
 def _test_recurrent_layer_unidirectional_transduction(
@@ -15,6 +42,8 @@ def _test_recurrent_layer_unidirectional_transduction(
     lengths,
     backward,
     left_padded,
+
+
 ):
     # Create transduction layer
     tranductor = transduction_layers.UnidirectionalLayer(layer)
