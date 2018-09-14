@@ -119,7 +119,7 @@ def mask_batches(x, mask, mode="mul"):
     if mode not in mask_functions:
         raise ValueError(f"Unknown masking mode {mode}")
     # Actually do the masking
-    return _mask_batch(x, mask, mask_functions["mode"])
+    return _mask_batch(x, mask, mask_functions[mode])
 
 
 def _generate_mask(
@@ -129,6 +129,7 @@ def _generate_mask(
     lengths,
     left_padded
 ):
+    lengths = np.asarray(lengths)
     # This helper function computes masks
     step_number = np.full(batch_size, step)
     # Compute a mask with value 1 if the sequence is not over

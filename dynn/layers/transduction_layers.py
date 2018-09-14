@@ -20,7 +20,7 @@ class UnidirectionalLayer(BaseLayer):
         """Passes its arguments to the recurrent layer"""
         self.cell.init(*args, **kwargs)
 
-    def __call_(
+    def __call__(
         self,
         input_sequence,
         backward=False,
@@ -54,7 +54,7 @@ class UnidirectionalLayer(BaseLayer):
             list: List of recurrent states (depends on the recurrent layer)
         """
         # Dimensions of the input sequence
-        batch_size = input_sequence.dim()[1]
+        batch_size = input_sequence[0].dim()[1]
         # Reverse the sequence for backward transduction
         max_length = len(input_sequence)
         if backward:
@@ -76,7 +76,7 @@ class UnidirectionalLayer(BaseLayer):
                     step, min(lengths), max_length, left_padded
                 )
         # Initial recurrent state provided by the recurrent cell
-        state = self.cell.initial_value()
+        state = self.cell.initial_value(batch_size=batch_size)
         # Start transducing
         output_sequence = []
         for step, x in enumerate(input_sequence):
@@ -85,7 +85,7 @@ class UnidirectionalLayer(BaseLayer):
             # recurrent state first and then input
             state = self.cell(x, *state)
             # Perform masking if we need to
-            # TODO: masking -> interpolation
+            # TODO: masking -> interpolation with initial state
             if do_masking(step+1):
                 # Generate the max depending on the position, padding, etc...
                 mask = _generate_mask(

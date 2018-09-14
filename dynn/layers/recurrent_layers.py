@@ -25,7 +25,7 @@ class RecurrentCell(object):
     def __init__(self, *args, **kwargs):
         pass
 
-    def initial_value(self):
+    def initial_value(self, batch_size=1):
         """Initial value of the recurrent state. Should return a list."""
         raise NotImplementedError()
 
@@ -120,13 +120,13 @@ class ElmanRNN(ParametrizedLayer, RecurrentCell):
         new_h = dy.affine_transform([self.b, self.Whh, h, self.Whx, x])
         return [self.activation(new_h)]
 
-    def initial_value(self):
+    def initial_value(self, batch_size=1):
         """Return a vector of dimension `hidden_dim` filled with zeros
 
         Returns:
             :py:class:`dynet.Expression`: Zero vector
         """
-        return [dy.zeros(self.hidden_dim)]
+        return [dy.zeros(self.hidden_dim, batch_size=batch_size)]
 
 
 class LSTM(ParametrizedLayer, RecurrentCell):
@@ -227,10 +227,11 @@ class LSTM(ParametrizedLayer, RecurrentCell):
         new_h = dy.vanilla_lstm_h(new_c, gates)
         return [new_h, new_c]
 
-    def initial_value(self):
+    def initial_value(self, batch_size=1):
         """Return two vectors of dimension `hidden_dim` filled with zeros
 
         Returns:
             tuple: two zero vectors for :math:`h_0` and :math:`c_0`
         """
-        return dy.zeros(self.hidden_dim), dy.zeros(self.hidden_dim)
+        zero_vector = dy.zeros(self.hidden_dim, batch_size=batch_size)
+        return zero_vector, zero_vector
