@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import unittest
 from unittest import TestCase
 
 import numpy as np
@@ -74,3 +75,7 @@ class TestUtil(TestCase):
             util.conditional_dropout(x, 0.0, False).npvalue(),
             x.npvalue()
         ))
+
+
+if __name__ == '__main__':
+    unittest.main()
