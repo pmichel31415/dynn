@@ -42,33 +42,121 @@ class MaxPooling1DLayer(BaseLayer):
     """1D max pooling
 
     Args:
-        kernel_width (int, optional): Kernel width. If this is not specified,
-            the default is to pool over the full sequence (default: ``None``)
-        stride (int, optional): Temporal stride (default: ``1``)
+        default_kernel_size (int, optional): Default kernel size. If this is
+            not specified, the default is to pool over the full sequence
+            (default: ``None``)
+        stride (int, optional): Default temporal stride (default: ``1``)
     """
 
-    def __init__(self, kernel_width=None, stride=1):
+    def __init__(self, default_kernel_size=None, default_stride=1):
         super(MaxPooling1DLayer, self).__init__("maxpool1d")
-        # Hyper-parameter
-        self.kernel_width = kernel_width
-        self.stride = stride
+        self.kernel_size = default_kernel_size
+        self.stride = default_stride
 
-    def init(self, test=False, update=True):
-        pass
+    def __call__(self, x, kernel_size=None, stride=None):
+        """Max pooling over the first dimension.
 
-    def __call__(self, x):
-        """Forward pass
+        This takes either a list of ``N`` ``d``-dimensional vectors or
+        a ``N x d`` matrix.
+
+        The output will be a matrix of dimension
+        ``(N - kernel_size + 1) // stride x d``
 
         Args:
-            x (:py:class:`dynet.Expression`): Input expression with the shape
-                (length, input_dim)
+            x (:py:class:`dynet.Expression`): Input matrix or list of vectors
+            dim (int, optional): The reduction dimension (default: ``0``)
+            kernel_size (int, optional): Kernel size. If this is not
+                specified, the default size specified in the constructor
+                is used.
+            stride (int, optional): Temporal stride. If this is not specified,
+                the default stride specified in the constructor is used.
 
         Returns:
-            :py:class:`dynet.Expression`: Vector of size input_dim
+            :py:class:`dynet.Expression`: Pooled sequence.
         """
-        # Max-pooling
-        self.h = max_pool_dim(
-            x, d=1, kernel_width=self.kernel_width, stride=self.stride
+        # Convert to matrix if needed
+        x = util.list_to_matrix(x)
+        # x's dimension,x_dim = length x dimension
+        x_dim, batch_size = x.dim()
+        # Reshape as length x 1 x dimension "image" to use maxpooling2d
+        img = util.unsqueeze(x, d=1)
+        # If the kernel size is None, set it to the length of the sentence
+        kernel_size = [kernel_size or self.kernel_size or x_dim[0], 1]
+        # 2D pooling with appropriate kernel size
+        max_pooled_img = dy.maxpooling2d(
+            img,
+            ksize=kernel_size,
+            stride=[stride or self.stride, 1],
+            is_valid=True,
         )
+        # Squeeze the useless dimension to get a matrix
+        output = util.squeeze(max_pooled_img, 1)
         # Final output
-        return self.h
+        return output
+
+
+class MaxPooling2DLayer(BaseLayer):
+    """2D max pooling.
+
+    Args:
+        kernel_size (list, optional): Default kernel size. This is a list of
+            rwo elements, one per dimension. If either is not specified, the
+            default is to pool over the entire dimension
+            (default: ``[None, None]``)
+        strides (list, optional): Stride along each dimension
+            (list of size 2, defaults to ``[1, 1]``).
+    """
+
+    def __init__(self, default_kernel_size=None, default_strides=None):
+        super(MaxPooling2DLayer, self).__init__("maxpool1d")
+        self.kernel_size = util._default_value(
+            default_kernel_size, [None, None]
+        )
+        self.strides = util._default_value(default_strides, [1, 1])
+
+    def __call__(self, x, kernel_size=None, strides=None):
+        """Max pooling over the first dimension.
+
+        If either of the ``kernel_size`` elements is not specified, the
+        pooling will be done over the full dimension (and the stride is
+        ignored)
+
+        Args:
+            x (:py:class:`dynet.Expression`): Input matrix or list of vectors
+            kernel_size (list, optional): Size of the pooling kernel. If this
+                is not specified, the default specified in the constructor is
+                used.
+            strides (list, optional): Stride along width/height. If this is not
+                specified, the default specified in the constructor is used.
+
+        Returns:
+            :py:class:`dynet.Expression`: Pooled sequence.
+        """
+        # Convert to matrix if needed
+        x = util.list_to_matrix(x)
+        # x's dimension
+        x_dim, batch_size = x.dim()
+        # If there is no channel dimension, add it
+        if len(x_dim) < 3:
+            x = util.unsqueeze(x, d=-1)
+        # If the kernel size is None, set it to the size of the dimension
+        kernel_size = util._default_value(kernel_size, [None, None])
+        kernel_size = [
+            kernel_size[0] or self.kernel_size[0] or x_dim[0],
+            kernel_size[1] or self.kernel_size[1] or x_dim[1]
+        ]
+        # Strides
+        strides = util._default_value(strides, [None, None])
+        strides = [
+            strides[0] or self.strides[0] or 1,
+            strides[1] or self.strides[1] or 1
+        ]
+        # 2D pooling with appropriate kernel size
+        max_pooled_img = dy.maxpooling2d(
+            x, ksize=kernel_size, stride=strides, is_valid=True,
+        )
+        # If there was no 3rd dimension in the input, remove it from the output
+        if len(x_dim) < 3:
+            max_pooled_img = util.squeeze(max_pooled_img, d=-1)
+        # Final output
+        return max_pooled_img

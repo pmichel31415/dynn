@@ -10,6 +10,14 @@ import numpy as np
 import dynet as dy
 
 
+def _default_value(argument, default):
+    """Returns ``default`` if ``argument`` is ``None``"""
+    if argument is None:
+        return default
+    else:
+        return argument
+
+
 def squeeze(x, d=0):
     """Removes a dimension of size 1 at the given position
 

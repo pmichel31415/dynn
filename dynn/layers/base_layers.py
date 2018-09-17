@@ -8,12 +8,15 @@ Base layer
 class BaseLayer(object):
     """Base layer interface"""
 
+    def __init__(self, name):
+        self.name = name
+
     def init(self, *args, **kwargs):
         """Initialize the layer before performing computation
 
         For example setup dropout, freeze some parameters, etc...
         """
-        raise NotImplementedError()
+        pass
 
     def __call__(self, *args, **kwargs):
         """Execute forward pass"""
@@ -25,4 +28,13 @@ class ParametrizedLayer(BaseLayer):
 
     def __init__(self, pc, name):
         """Creates a subcollection for this layer with a custom name"""
+        super(ParametrizedLayer, self).__init__(name)
         self.pc = pc.add_subcollection(name=name)
+
+    def init(self, *args, **kwargs):
+        """Initialize the layer before performing computation
+
+        For example setup dropout, freeze some parameters, etc...
+        This needs to be implemented for parametrized layers
+        """
+        raise NotImplementedError()
