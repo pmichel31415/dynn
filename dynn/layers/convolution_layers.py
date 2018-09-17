@@ -82,7 +82,7 @@ class Conv1DLayer(ParametrizedLayer):
                 output has the same length (default ``True``)
 
         Returns:
-            :py:class:`dynet.Expression`: :math:`y=f(Wx+b)`
+            :py:class:`dynet.Expression`: Convolved sequence.
         """
         # Dropout
         x = conditional_dropout(x, self.dropout_rate, self.test)
@@ -190,7 +190,7 @@ class Conv2DLayer(ParametrizedLayer):
                 (list of size 2)
 
         Returns:
-            :py:class:`dynet.Expression`: Convolved image
+            :py:class:`dynet.Expression`: Convolved image.
         """
         # Dropout
         x = conditional_dropout(x, self.dropout_rate, self.test)
