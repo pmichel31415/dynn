@@ -77,7 +77,7 @@ class MaxPooling1DLayer(BaseLayer):
         # Convert to matrix if needed
         x = util.list_to_matrix(x)
         # x's dimension,x_dim = length x dimension
-        x_dim, batch_size = x.dim()
+        x_dim, _ = x.dim()
         # Reshape as length x 1 x dimension "image" to use maxpooling2d
         img = util.unsqueeze(x, d=1)
         # If the kernel size is None, set it to the length of the sentence
@@ -100,10 +100,10 @@ class MaxPooling2DLayer(BaseLayer):
 
     Args:
         kernel_size (list, optional): Default kernel size. This is a list of
-            rwo elements, one per dimension. If either is not specified, the
+            two elements, one per dimension. If either is not specified, the
             default is to pool over the entire dimension
             (default: ``[None, None]``)
-        strides (list, optional): Stride along each dimension
+        default_strides (list, optional): Stride along each dimension
             (list of size 2, defaults to ``[1, 1]``).
     """
 
@@ -135,7 +135,7 @@ class MaxPooling2DLayer(BaseLayer):
         # Convert to matrix if needed
         x = util.list_to_matrix(x)
         # x's dimension
-        x_dim, batch_size = x.dim()
+        x_dim, _ = x.dim()
         # If there is no channel dimension, add it
         if len(x_dim) < 3:
             x = util.unsqueeze(x, d=-1)

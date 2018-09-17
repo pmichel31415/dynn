@@ -146,7 +146,7 @@ def _test_recurrent_layer_bidirectional_transduction(
         dy.esum([dy.sum_elems(state[0]) for state in fwd_states])
     )
     bwd_z = dy.mean_batches(
-        dy.esum([dy.sum_elems(state[0]) for state in fwd_states])
+        dy.esum([dy.sum_elems(state[0]) for state in bwd_states])
     )
     z = fwd_z + bwd_z
     z.forward()
