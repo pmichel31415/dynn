@@ -122,7 +122,8 @@ class MaxPooling2DLayer(BaseLayer):
         ignored)
 
         Args:
-            x (:py:class:`dynet.Expression`): Input matrix or list of vectors
+            x (:py:class:`dynet.Expression`): Input image (3-d tensor) or
+                matrix.
             kernel_size (list, optional): Size of the pooling kernel. If this
                 is not specified, the default specified in the constructor is
                 used.

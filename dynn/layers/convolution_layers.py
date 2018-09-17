@@ -201,8 +201,8 @@ class Conv2DLayer(ParametrizedLayer):
         """Forward pass
 
         Args:
-            x (:py:class:`dynet.Expression`): Input expression with the shape
-                (length, input_dim)
+            x (:py:class:`dynet.Expression`): Input image (3-d tensor) or
+                matrix.
             zero_padded (bool, optional): Pad the image with zeros so that the
                 output has the same width/height. If this is not specified,
                 the default specified in the constructor is used.
