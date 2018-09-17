@@ -130,7 +130,7 @@ class Conv2DLayer(ParametrizedLayer):
         num_channels (int): Number of channels in the input image
         num_kernels (int): Number of kernels (essentially the output dimension)
         kernel_size (list, optional): Default kernel size. This is a list of
-            two elements, one per dimension. 
+            two elements, one per dimension.
         activation (function, optional): activation function
             (default: ``identity``)
         dropout (float, optional):  Dropout rate (default 0)
