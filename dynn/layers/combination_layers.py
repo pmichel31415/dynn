@@ -71,7 +71,7 @@ class StackedLayers(BaseLayer):
 
 
 class ConcatenatedLayers(BaseLayer):
-    """A helper class to run layers in parallel and concatenate their outputs
+    """A helper class to run layers on the same input and concatenate their outputs
 
     This can be used to create 2d conv layers with multiple kernel sizes by
     concatenating multiple :py:class:`dynn.layers.Conv2DLayer` .
