@@ -152,7 +152,7 @@ class Conv2DLayer(ParametrizedLayer):
         dropout_rate=0.0,
         nobias=False,
         default_zero_padded=True,
-        default_strides=1,
+        default_strides=None,
     ):
         super(Conv2DLayer, self).__init__(pc, "conv2d")
         # Hyper-parameters

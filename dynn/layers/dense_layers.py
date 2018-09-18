@@ -156,20 +156,3 @@ class GatedLayer(ParametrizedLayer):
         self.g = dy.logistic(dy.affine_transform([self.bg, self.Wg, x]))
         # final output
         return dy.cmult(self.g, self.o)
-
-
-class StackedLayers(ParametrizedLayer):
-    """Helper class to stack layers"""
-
-    def __init__(self, *args):
-        self.layers = args
-
-    def init(self, test=False, update=True):
-        for layer in self.layers:
-            layer.init(test=test, update=update)
-
-    def __call__(self, x):
-        self.hs = [x]
-        for layer in self.layers:
-            self.hs.append(layer(self.hs[-1]))
-        return self.hs[-1]
