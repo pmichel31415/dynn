@@ -25,6 +25,7 @@ from . import (
     pooling_layers,
     convolution_layers,
     normalization_layers,
+    combination_layers,
 )
 
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "pooling_layers",
     "convolution_layers",
     "normalization_layers",
+    "combination_layers",
 ]
