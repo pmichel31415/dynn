@@ -8,7 +8,7 @@ Pooling layers
 from __future__ import print_function, division
 
 import dynet as dy
-from .. import util
+from .. import util, operations
 from .base_layers import BaseLayer
 
 
@@ -79,7 +79,7 @@ class MaxPooling1DLayer(BaseLayer):
         # x's dimension,x_dim = length x dimension
         x_dim, _ = x.dim()
         # Reshape as length x 1 x dimension "image" to use maxpooling2d
-        img = util.unsqueeze(x, d=1)
+        img = operations.unsqueeze(x, d=1)
         # If the kernel size is None, set it to the length of the sentence
         kernel_size = [kernel_size or self.kernel_size or x_dim[0], 1]
         # 2D pooling with appropriate kernel size
@@ -90,7 +90,7 @@ class MaxPooling1DLayer(BaseLayer):
             is_valid=True,
         )
         # Squeeze the useless dimension to get a matrix
-        output = util.squeeze(max_pooled_img, 1)
+        output = operations.squeeze(max_pooled_img, 1)
         # Final output
         return output
 
@@ -139,7 +139,7 @@ class MaxPooling2DLayer(BaseLayer):
         x_dim, _ = x.dim()
         # If there is no channel dimension, add it
         if len(x_dim) < 3:
-            x = util.unsqueeze(x, d=-1)
+            x = operations.unsqueeze(x, d=-1)
         # If the kernel size is None, set it to the size of the dimension
         kernel_size = util._default_value(kernel_size, [None, None])
         kernel_size = [
@@ -158,6 +158,6 @@ class MaxPooling2DLayer(BaseLayer):
         )
         # If there was no 3rd dimension in the input, remove it from the output
         if len(x_dim) < 3:
-            max_pooled_img = util.squeeze(max_pooled_img, d=-1)
+            max_pooled_img = operations.squeeze(max_pooled_img, d=-1)
         # Final output
         return max_pooled_img

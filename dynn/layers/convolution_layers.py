@@ -7,7 +7,7 @@ import dynet as dy
 
 from ..parameter_initialization import ZeroInit
 from ..activations import identity
-from .. import util
+from .. import util, operations
 from .base_layers import ParametrizedLayer
 
 
@@ -97,7 +97,7 @@ class Conv1DLayer(ParametrizedLayer):
         x = util.conditional_dropout(x, self.dropout_rate, self.test)
         # Reshape the ``length x input_dim`` matrix to an
         # "image" of shape ``length x 1 x input_dim`` to use dynet's conv2d
-        img = util.unsqueeze(x, 1)
+        img = operations.unsqueeze(x, 1)
         # Retrieve convolution arguments
         is_valid = not (
             self.zero_padded if zero_padded is None else zero_padded
@@ -114,7 +114,7 @@ class Conv1DLayer(ParametrizedLayer):
                 img, self.K, self.b, stride=stride, is_valid=is_valid
             )
         # Reshape back to a  ``length x output_dim`` matrix
-        output = util.squeeze(output_img, 1)
+        output = operations.squeeze(output_img, 1)
         # Activation
         output = self.activation(output)
         # Final output

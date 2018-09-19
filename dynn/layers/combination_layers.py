@@ -8,7 +8,7 @@ layers within one layer.
 """
 import dynet as dy
 
-from .. import util
+from .. import util, operations
 from .base_layers import BaseLayer
 
 
@@ -131,7 +131,7 @@ class ConcatenatedLayers(BaseLayer):
         for layer in self.layers:
             h = layer(x)
             if insert_dim:
-                h = util.unsqueeze(h, d=self.dim)
+                h = operations.unsqueeze(h, d=self.dim)
             hs.append(h)
         # Concat dim
         concat_dim = self.dim
