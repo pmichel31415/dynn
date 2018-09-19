@@ -8,7 +8,7 @@ from . import operations
 from . import activations
 from . import parameter_initialization
 
-__version__ = "0.0.10"
+__version__ = "0.0.11"
 
 __all__ = [
     "layers",
