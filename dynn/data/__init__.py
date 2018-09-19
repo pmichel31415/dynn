@@ -9,3 +9,12 @@ Supported datasets are:
 
 - [MNIST](http://yann.lecun.com/exdb/mnist/)
 """
+from . import (
+    batching,
+    mnist,
+)
+
+__all__ = [
+    "batching",
+    "mnist",
+]
