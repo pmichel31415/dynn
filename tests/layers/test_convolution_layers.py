@@ -82,11 +82,11 @@ class TestConv2DLayer(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
-        self.H = 20
-        self.W = 15
-        self.di = 10
+        self.H = 7
+        self.W = 8
+        self.di = 9
         self.nk = 5
-        self.ks = [4, 3]
+        self.ks = [2, 3]
         self.bsz = 8
         self.dropout_rate = 0.1
         self.parameters_matrix = product(
