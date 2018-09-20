@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 MNIST
-~~~~~
+^^^^^
 
 Various functions for accessing the
 `MNIST <http://yann.lecun.com/exdb/mnist/>`_ dataset.

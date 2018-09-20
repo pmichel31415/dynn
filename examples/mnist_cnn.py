@@ -91,7 +91,7 @@ for epoch in range(5):
     # End of epoch logging
     print(f"Epoch {epoch+1}@100%: NLL={nll.value():.3f}")
     print(f"Took {time.time()-start_time:.1f}s")
-    print("=" * 20) 
+    print("=" * 20)
 
 # Testing
 # =======
