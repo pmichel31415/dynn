@@ -14,7 +14,7 @@ def squeeze(x, d=0):
 
     Example:
 
-    .. code-block: : python
+    .. code-block:: python
 
         # (1, 20)
         x = dy.zeros((1, 20))
@@ -26,6 +26,7 @@ def squeeze(x, d=0):
         squeeze(x, 1)
         # (20,)
         squeeze(x, -1)
+
     """
     dim, batch_size = x.dim()
     if d < 0:
@@ -48,7 +49,7 @@ def unsqueeze(x, d=0):
 
     Example:
 
-    .. code-block: : python
+    .. code-block:: python
 
         # (10, 20)
         x = dy.zeros((10, 20))
@@ -56,6 +57,7 @@ def unsqueeze(x, d=0):
         unsqueeze(x, 0)
         # (10, 20, 1)
         unsqueeze(x, -1)
+
     """
     dim, batch_size = x.dim()
     if d < 0:

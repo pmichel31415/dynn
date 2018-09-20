@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 MNIST
-=====
+~~~~~
 
-Various functions for accessing the MNIST dataset.
+Various functions for accessing the
+`MNIST <http://yann.lecun.com/exdb/mnist/>`_ dataset.
 """
 import os
 import struct
@@ -25,7 +26,7 @@ mnist_files = {
 
 
 def download_mnist(path=".", force=False):
-    """Downloads mnist from "http://yann.lecun.com/exdb/mnist/"
+    """Downloads MNIST from "http://yann.lecun.com/exdb/mnist/"
 
     Args:
         path (str, optional): Local folder (defaults to ".")

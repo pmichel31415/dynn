@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Batching procedures
-===================
+^^^^^^^^^^^^^^^^^^^
 
 Iterators implementing common batching strategies.
 """
@@ -97,7 +97,7 @@ class NumpyBatchIterator(object):
         return int(np.ceil(self.num_samples / self.batch_size))
 
     def __getitem__(self, index):
-        """Returns the ``index``th **batch** (not sample)
+        """Returns the ``index`` th **batch** (not sample)
 
         This returns something different every time the data is shuffled.
 

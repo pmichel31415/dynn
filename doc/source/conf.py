@@ -42,14 +42,14 @@ version = ""
 release = dynn_version
 
 # -- API doc -----------------------------------------------------------------
-
-
 output_path = os.path.join(".", "api")
 apidoc.main([
     "--separate",
     "--force",
     "--implicit-namespaces",
     "--no-headings",
+    "--separate",
+    "-d", "4",
     "--module-first",
     "-H", project,
     "-o", output_path,
@@ -77,7 +77,13 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinxcontrib.napoleon",
+    # "sphinxcontrib.apidoc",
 ]
+
+# apidoc
+# apidoc_module_dir = os.path.abspath(dynn_path)
+# apidoc_output_dir = os.path.join(".", "api")
+# apidoc_separate_modules = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
