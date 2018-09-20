@@ -24,6 +24,7 @@ from . import (
     transduction_layers,
     pooling_layers,
     convolution_layers,
+    flow_layers,
     normalization_layers,
     combination_layers,
 )
@@ -35,6 +36,7 @@ __all__ = [
     "transduction_layers",
     "pooling_layers",
     "convolution_layers",
+    "flow_layers",
     "normalization_layers",
     "combination_layers",
 ]
