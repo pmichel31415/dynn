@@ -68,22 +68,22 @@ class NumpyBatchIterator(object):
                 f"Data and targets size mismatch ({len(data)} "
                 f"vs {len(targets)})"
             )
-
+        self.num_samples = len(targets)
         # The data is stored as a fortran contiguous array so having the
-        # batch size last is faster
+        # batch size last is faster for selecting
         self.data = np.asfortranarray(
             np.stack([np.atleast_1d(sample) for sample in data], axis=-1)
         )
         self.targets = np.asfortranarray(
             np.stack([target for target in targets], axis=-1)
         )
-
+        # Main parameters
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.length = len(targets)
+        # Initial position and order
         self.position = 0
-        self.order = np.arange(self.length)
-
+        self.order = np.arange(self.num_samples)
+        # Reset position and shuffle the order if applicable
         self.reset()
 
     def __len__(self):
@@ -94,7 +94,7 @@ class NumpyBatchIterator(object):
             int: Number of batches in the dataset
                 ``ceil(len(data)/batch_size)``
         """
-        return int(np.ceil(self.length / self.batch_size))
+        return int(np.ceil(self.num_samples / self.batch_size))
 
     def __getitem__(self, index):
         """Returns the ``index``th **batch** (not sample)
@@ -118,7 +118,7 @@ class NumpyBatchIterator(object):
 
     def percentage_done(self):
         """What percent of the data has been covered in the current epoch"""
-        return 100 * (self.position / self.length)
+        return 100 * (self.position / self.num_samples)
 
     def just_passed_multiple(self, batch_number):
         """Checks whether the current number of batches processed has
@@ -148,11 +148,11 @@ class NumpyBatchIterator(object):
 
     def __next__(self):
         # Check for end of epoch
-        if self.position >= self.length:
+        if self.position >= self.num_samples:
             raise StopIteration
         # Retrieve random indices for the batch
         start_idx = self.position
-        stop_idx = min(self.position + self.batch_size, self.length)
+        stop_idx = min(self.position + self.batch_size, self.num_samples)
         # Increment position
         self.position += self.batch_size
         # Return batch
