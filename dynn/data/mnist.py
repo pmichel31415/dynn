@@ -7,6 +7,9 @@ Various functions for accessing the MNIST dataset.
 """
 import os
 import struct
+import gzip
+from io import BytesIO
+import array
 
 import numpy as np
 
@@ -14,10 +17,10 @@ from .data_util import download_if_not_there
 
 mnist_url = "http://yann.lecun.com/exdb/mnist/"
 mnist_files = {
-    "train_img": "train-images.idx3-ubyte",
-    "train_lbl": "train-labels.idx1-ubyte",
-    "test_img": "t10k-images.idx3-ubyte",
-    "test_lbl": "t10k-labels.idx1-ubyte",
+    "train_img": "train-images-idx3-ubyte.gz",
+    "train_lbl": "train-labels-idx1-ubyte.gz",
+    "test_img": "t10k-images-idx3-ubyte.gz",
+    "test_lbl": "t10k-labels-idx1-ubyte.gz",
 }
 
 
@@ -31,7 +34,7 @@ def download_mnist(path=".", force=False):
     """
     # Download all files sequentially
     for filename in mnist_files.values():
-        download_if_not_there(f"{filename}.gz", mnist_url, path, force=force)
+        download_if_not_there(filename, mnist_url, path, force=force)
 
 
 def read_mnist(split, path):
@@ -41,7 +44,7 @@ def read_mnist(split, path):
 
     .. code-block:: python
 
-        for image in read_mnist("training", "/path/to/mnist"):
+        for image in read_mnist("train", "/path/to/mnist"):
             train(image)
 
     Args:
@@ -55,18 +58,26 @@ def read_mnist(split, path):
     # Adapted from https://gist.github.com/akesling/5358964
     if not (split is "test" or split is "train"):
         raise ValueError("split must be \"train\" or \"test\"")
-    fname_img = os.path.join(path, mnist_files[f"{split}_img"])
-    fname_lbl = os.path.join(path, mnist_files[f"{split}_lbl"])
-    with open(fname_lbl, "rb") as flbl:
+    abs_path = os.path.abspath(path)
+    fname_img = os.path.join(abs_path, mnist_files[f"{split}_img"])
+    fname_lbl = os.path.join(abs_path, mnist_files[f"{split}_lbl"])
+
+    with open(fname_lbl, "rb") as zflbl:
+        flbl = BytesIO(gzip.decompress(zflbl.read()))
         _, _ = struct.unpack(">II", flbl.read(8))
-        lbl = np.fromfile(flbl, dtype=np.int8)
+        data = array.array("B", flbl.read())
+        lbl = np.asarray(data, dtype=np.uint8)
 
-    with open(fname_img, "rb") as fimg:
+    with open(fname_img, "rb") as zfimg:
+        fimg = BytesIO(gzip.decompress(zfimg.read()))
         _, _, rows, cols = struct.unpack(">IIII", fimg.read(16))
-        img = np.multiply(np.fromfile(fimg, dtype=np.uint8).reshape(
-            len(lbl), rows, cols), 1.0/255.0)
+        data = array.array("B", fimg.read())
+        img = np.multiply(
+            np.asarray(data, dtype=np.uint8).reshape(len(lbl), rows, cols, 1),
+            1.0 / 255.0
+        )
 
-    def get_img(idx): return (lbl[idx], img[idx])
+    def get_img(idx): return (img[idx], lbl[idx])
 
     for i in range(len(lbl)):
         yield get_img(i)
@@ -85,7 +96,10 @@ def load_mnist(path):
         tuple: train and test sets
     """
 
-    train_set = [sample for sample in read_mnist("train", path)]
-    test_set = [sample for sample in read_mnist("test", path)]
+    train = list(read_mnist("train", path))
+    train_img = [img for img, _ in train]
+    train_lbl = [lbl for _, lbl in train]
+    test_img = [img for img, _ in read_mnist("test", path)]
+    test_lbl = [lbl for _, lbl in read_mnist("test", path)]
 
-    return train_set, test_set
+    return (train_img, train_lbl), (test_img, test_lbl)
