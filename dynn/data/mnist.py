@@ -86,20 +86,23 @@ def read_mnist(split, path):
 def load_mnist(path):
     """Loads the MNIST dataset
 
-    Returns the train and test set, each as a list of images and labels.
-    The images are represented as numpy arrays.
+    Returns the train and test set, each as a list of images and a list
+    of labels. The images are represented as numpy arrays and the labels as
+    integers.
 
     Args:
-        path (str): Path to the folder containing the ``*-ubyte`` files
+        path (str): Path to the folder containing the ``*-ubyte.gz`` files
 
     Returns:
         tuple: train and test sets
     """
-
+    # Read training data
     train = list(read_mnist("train", path))
     train_img = [img for img, _ in train]
     train_lbl = [lbl for _, lbl in train]
-    test_img = [img for img, _ in read_mnist("test", path)]
-    test_lbl = [lbl for _, lbl in read_mnist("test", path)]
+    # Read test data
+    test = list(read_mnist("test", path))
+    test_img = [img for img, _ in test]
+    test_lbl = [lbl for _, lbl in test]
 
     return (train_img, train_lbl), (test_img, test_lbl)
