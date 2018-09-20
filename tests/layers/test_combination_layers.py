@@ -27,7 +27,7 @@ class TestStackedLayers(TestCase):
                 for i in range(n_layers)
             ]
             # Stack the layers
-            network = combination_layers.StackedLayers(layers)
+            network = combination_layers.StackedLayers(*layers)
             # Run once for sanity check
             dy.renew_cg()
             # Dummy input
@@ -46,14 +46,14 @@ class TestStackedLayers(TestCase):
             self.assertEqual(y.dim()[1], self.bsz)
 
     def test_empty_list(self):
-        self.assertRaises(ValueError, combination_layers.StackedLayers, [])
+        self.assertRaises(ValueError, combination_layers.StackedLayers)
 
     def test_nonlayer(self):
         self.assertRaises(
             ValueError,
             combination_layers.StackedLayers,
-            [dense_layers.DenseLayer(self.pc, 1, 1), "Oops",
-             dense_layers.DenseLayer(self.pc, 1, 1)]
+            dense_layers.DenseLayer(self.pc, 1, 1), "Oops",
+            dense_layers.DenseLayer(self.pc, 1, 1)
         )
 
 
@@ -77,7 +77,7 @@ class TestConcatenatedLayers(TestCase):
                 for ksz in self.ksizes[:n_layers]
             ]
             # Concatenate the layers
-            network = combination_layers.ConcatenatedLayers(layers, dim=-1)
+            network = combination_layers.ConcatenatedLayers(*layers, dim=-1)
             # Try both with and without insert dim
             for insert_dim in [False, True]:
                 # Run once for sanity check
@@ -107,16 +107,14 @@ class TestConcatenatedLayers(TestCase):
                 self.assertEqual(y.dim()[1], self.bsz)
 
     def test_empty_list(self):
-        self.assertRaises(
-            ValueError, combination_layers.ConcatenatedLayers, []
-        )
+        self.assertRaises(ValueError, combination_layers.ConcatenatedLayers)
 
     def test_nonlayer(self):
         self.assertRaises(
             ValueError,
             combination_layers.ConcatenatedLayers,
-            [dense_layers.DenseLayer(self.pc, 1, 1), "Oops",
-             dense_layers.DenseLayer(self.pc, 1, 1)]
+            dense_layers.DenseLayer(self.pc, 1, 1), "Oops",
+            dense_layers.DenseLayer(self.pc, 1, 1)
         )
 
 

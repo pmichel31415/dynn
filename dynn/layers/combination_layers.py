@@ -25,7 +25,7 @@ class StackedLayers(BaseLayer):
         of the last layer (as opposed to the output of all layers).
     """
 
-    def __init__(self, layers, default_return_last_only=True):
+    def __init__(self, *layers, default_return_last_only=True):
         # Check number of arguments
         if len(layers) == 0:
             raise ValueError("Can't stack empty list of layers")
@@ -90,7 +90,7 @@ class ConcatenatedLayers(BaseLayer):
             concatenate.
     """
 
-    def __init__(self, layers, dim=0, default_insert_dim=False):
+    def __init__(self, *layers, dim=0, default_insert_dim=False):
         # Check number of arguments
         if len(layers) == 0:
             raise ValueError("Can't concatenate empty list of layers")
