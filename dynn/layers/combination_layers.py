@@ -34,7 +34,7 @@ class StackedLayers(BaseLayer):
             if not isinstance(layer, BaseLayer):
                 raise ValueError(
                     f"Layer #{layer_idx} should be a subclass of BaseLayer, "
-                    "is {layer.__class__}"
+                    f"is {layer.__class__}"
                 )
         self.return_last_only = default_return_last_only
         self.layers = layers
@@ -99,7 +99,7 @@ class ConcatenatedLayers(BaseLayer):
             if not isinstance(layer, BaseLayer):
                 raise ValueError(
                     f"Layer #{layer_idx} should be a subclass of BaseLayer, "
-                    "is {layer.__class__}"
+                    f"is {layer.__class__}"
                 )
 
         self.layers = layers
