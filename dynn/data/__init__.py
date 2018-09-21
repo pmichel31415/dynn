@@ -12,9 +12,11 @@ Supported datasets are:
 from . import (
     batching,
     mnist,
+    cifar10,
 )
 
 __all__ = [
     "batching",
     "mnist",
+    "cifar10",
 ]
