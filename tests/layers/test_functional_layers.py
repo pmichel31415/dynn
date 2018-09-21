@@ -4,6 +4,8 @@ from unittest import TestCase
 
 import numpy as np
 import dynet as dy
+
+from dynn import activations
 from dynn.layers import functional_layers
 
 
@@ -57,6 +59,35 @@ class TestConstantLayer(TestCase):
         z.backward()
         # Check value
         self.assertTrue(np.allclose(y.npvalue(), self.nparray))
+
+
+class TestLambdaLayer(TestCase):
+
+    def setUp(self):
+        self.functions = [
+            activations.relu,
+            activations.identity,
+            activations.tanh
+        ]
+        self.inputs = [np.random.rand(2, 3) for _ in range(10)]
+
+    def test_functions(self):
+        # Iterate over different functions
+        for func in self.functions:
+            # Lambda layer
+            lamb = functional_layers.LambdaLayer(func)
+            # Iterate over different inputs
+            for x_val in self.inputs:
+                # Initialize computation graph
+                dy.renew_cg()
+                # Initialize layer
+                lamb.init(test=False, update=True)
+                # Dummy input
+                x = dy.inputTensor(x_val)
+                # Check value
+                self.assertTrue(np.allclose(
+                    lamb(x).npvalue(), func(x).npvalue()
+                ))
 
 
 class TestUnaryOpLayer(TestCase):

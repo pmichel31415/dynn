@@ -42,6 +42,39 @@ class ConstantLayer(BaseLayer):
         return self.constant
 
 
+class LambdaLayer(BaseLayer):
+    """This layer applies an arbitrary function to its input.
+
+    .. code-block:: python
+
+        LambdaLayer(f)(x) == f(x)
+
+    This is useful if you want to wrap activation functions as layers. The
+    unary operation should be a function taking :py:class:`dynet.Expression` to
+    :py:class:`dynet.Expression`.
+
+    You shouldn't use this to stack layers though, ``op`` oughtn't be a layer.
+    If you want to stack layers, use
+    :py:class:`combination_layers.StackedLayers`.
+
+    Args:
+        layer (:py:class:`base_layers.BaseLayer`): The layer to which output
+            you want to apply the unary operation.
+        binary_operation (function): A unary operation on
+            :py:class:`dynet.Expression` objects
+    """
+
+    def __init__(self, function):
+        super(LambdaLayer, self).__init__(
+            f"lambda_{function.__name__}"
+        )
+        self.function = function
+
+    def __call__(self, *args, **kwargs):
+        """Returns ``function(*args, **kwargs)``"""
+        return self.function(*args, **kwargs)
+
+
 class UnaryOpLayer(BaseLayer):
     """This layer wraps a unary operation on another layer.
 
@@ -49,9 +82,11 @@ class UnaryOpLayer(BaseLayer):
 
         UnaryOpLayer(layer, op)(x) == op(layer(x))
 
-    This is useful if you want to wrap activation functions as layers. The
-    unary operation should be a function taking :py:class:`dynet.Expression` to
-    :py:class:`dynet.Expression`.
+    This is a shorter way of writing:
+
+    .. code-block:: python
+
+        UnaryOpLayer(layer, op)(x) == StackedLayers(layer, LambdaLayer(op))
 
     You shouldn't use this to stack layers though, ``op`` oughtn't be a layer.
     If you want to stack layers, use
