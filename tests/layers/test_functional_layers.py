@@ -89,6 +89,22 @@ class TestLambdaLayer(TestCase):
                     lamb(x).npvalue(), func(x).npvalue()
                 ))
 
+    def test_identity(self):
+        # Create identity layer
+        identity = functional_layers.IdentityLayer()
+        # Iterate over different inputs
+        for x_val in self.inputs:
+            # Initialize computation graph
+            dy.renew_cg()
+            # Initialize layer
+            identity.init(test=False, update=True)
+            # Dummy input
+            x = dy.inputTensor(x_val)
+            # Check value
+            self.assertTrue(np.allclose(
+                identity(x).npvalue(), x.npvalue()
+            ))
+
 
 class TestUnaryOpLayer(TestCase):
 
@@ -116,21 +132,6 @@ class TestUnaryOpLayer(TestCase):
         # Check value
         self.assertEqual(y_1.scalar_value(), -self.scalar)
         self.assertEqual(y_2.scalar_value(), -self.scalar)
-
-    def test_identity(self):
-        # Create identity layer
-        identity = functional_layers.IdentityLayer(self.layer)
-        # Initialize computation graph
-        dy.renew_cg()
-        # Initialize layer
-        identity.init(test=False, update=True)
-        # Run layer
-        y = identity()
-        # Try forward/backward
-        y.forward()
-        y.backward()
-        # Check value
-        self.assertEqual(y.scalar_value(), self.scalar)
 
 
 class TestBinaryOpLayer(TestCase):

@@ -75,6 +75,21 @@ class LambdaLayer(BaseLayer):
         return self.function(*args, **kwargs)
 
 
+class IdentityLayer(LambdaLayer):
+    """The identity layer does literally nothing
+
+    .. code-block:: python
+
+        IdentityLayer()(x) == x
+
+    It passes its input directly as the output. Still, it can be useful to
+    express more complicated layers like residual connections.
+    """
+
+    def __init__(self):
+        super(IdentityLayer, self).__init__(identity)
+
+
 class UnaryOpLayer(BaseLayer):
     """This layer wraps a unary operation on another layer.
 
@@ -115,25 +130,6 @@ class UnaryOpLayer(BaseLayer):
     def __call__(self, *args, **kwargs):
         """Returns ``unary_operation(layer(*args, **kwargs))``"""
         return self.unary_operation(self.layer(*args, **kwargs))
-
-
-class IdentityLayer(UnaryOpLayer):
-    """The identity layer does literally nothing
-
-    .. code-block:: python
-
-        IdentityLayer(layer)(x) == layer(x)
-
-    It passes its input directly as the output. Still, it can be useful to
-    express more complicated layers like residual connections.
-
-    Args:
-        layer (:py:class:`base_layers.BaseLayer`): The layer to which output
-            you want to apply the identity operation.
-    """
-
-    def __init__(self, layer):
-        super(IdentityLayer, self).__init__(layer, identity)
 
 
 class NegationLayer(UnaryOpLayer):
