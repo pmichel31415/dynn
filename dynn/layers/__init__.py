@@ -19,6 +19,7 @@ used like this:
 """
 from . import (
     base_layers,
+    functional_layers,
     dense_layers,
     recurrent_layers,
     transduction_layers,
@@ -31,6 +32,7 @@ from . import (
 
 __all__ = [
     "base_layers",
+    "functional_layers",
     "dense_layers",
     "recurrent_layers",
     "transduction_layers",
