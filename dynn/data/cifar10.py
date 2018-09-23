@@ -73,10 +73,8 @@ def read_cifar10(split, path):
             data = np.concatenate(data, axis=0)
             labels = np.concatenate(labels, axis=0)
 
-    images = np.multiply(
-        np.asarray(data, dtype=np.uint8).reshape(len(labels), 32, 32, 3),
-        1.0 / 255.0
-    )
+    images = np.transpose(data.reshape(-1, 3, 32, 32), (0, 2, 3, 1))
+    images = np.multiply(images.astype(np.uint8), 1.0 / 255.0)
 
     def get_image(idx): return (images[idx], labels[idx])
 
