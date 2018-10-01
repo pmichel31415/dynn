@@ -81,6 +81,7 @@ class MaxPooling1DLayer(BaseLayer):
         # Reshape as length x 1 x dimension "image" to use maxpooling2d
         img = operations.unsqueeze(x, d=1)
         # If the kernel size is None, set it to the length of the sentence
+        full_sequence_pooling = (kernel_size or self.kernel_size) is None
         kernel_size = [kernel_size or self.kernel_size or x_dim[0], 1]
         # 2D pooling with appropriate kernel size
         max_pooled_img = dy.maxpooling2d(
@@ -91,6 +92,9 @@ class MaxPooling1DLayer(BaseLayer):
         )
         # Squeeze the useless dimension to get a matrix
         output = operations.squeeze(max_pooled_img, 1)
+        # If we pooled over the full sequence, squeeze the useless dimension
+        if full_sequence_pooling:
+            output = operations.squeeze(output, 0)
         # Final output
         return output
 

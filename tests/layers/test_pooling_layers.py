@@ -35,10 +35,15 @@ class TestPool1DLayer(TestCase):
         z.forward()
         z.backward()
         # Check dimensions
-        kernel_size = kernel_size or self.N
+        full_sequence_pooling = (kernel_size or pool1d.kernel_size) is None
+        kernel_size = kernel_size or pool1d.kernel_size or self.N
         out_length = self.N - kernel_size + 1
         out_length = int(np.ceil(out_length / stride))
-        self.assertTupleEqual(y.dim()[0], (out_length, self.di))
+        if full_sequence_pooling:
+            expected_shape = (self.di,)
+        else:
+            expected_shape = (out_length, self.di)
+        self.assertTupleEqual(y.dim()[0], expected_shape)
         self.assertEqual(y.dim()[1], self.bsz)
 
     def test_forward_backward(self):
