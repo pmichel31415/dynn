@@ -5,10 +5,10 @@ from unittest import TestCase
 
 import numpy as np
 
-from dynn.data import batching
+from dynn.data import batching, dictionary
 
 
-class TestNum(TestCase):
+class TestNumpyBatchIterator(TestCase):
 
     def setUp(self):
         self.input_dim = 3
@@ -91,7 +91,122 @@ class TestNum(TestCase):
         batched_dataset[0]
         batched_dataset[1:3]
         batched_dataset[1:10:2]
-        batched_dataset[1:10:-2]
+        batched_dataset[10:1:-2]
+        batched_dataset[::-1]
+
+
+class TestPaddedSequenceBatchIterator(TestCase):
+
+    def setUp(self):
+        self.dic = dictionary.Dictionary(symbols="abcdefg".split())
+        self.max_samples = 3
+        self.max_tokens = 20
+        self.num_labels = 10
+        self.data_size = self.max_tokens + 1
+        self.output_dim = 5
+        self.data = [
+            np.random.randint(low=self.dic.nspecials,
+                              high=len(self.dic), size=i)
+            for i in range(1, self.data_size + 1)
+        ]
+
+    def _dummy_classification_iterator(
+        self,
+        shuffle=True,
+        group_by_length=False
+    ):
+        # Create targets
+        labels = np.random.randint(self.num_labels, size=self.data_size)
+        # Iterator
+        return batching.PaddedSequenceBatchIterator(
+            self.data,
+            labels,
+            self.dic,
+            max_samples=self.max_samples,
+            max_tokens=self.max_tokens,
+            shuffle=shuffle,
+            group_by_length=group_by_length,
+        )
+
+    def _dummy_regression_iterator(self):
+        # Create targets
+        targets = np.random.uniform(size=(self.data_size, self.output_dim))
+        # Iterator
+        return batching.PaddedSequenceBatchIterator(
+            self.data,
+            targets,
+            self.dic,
+            max_samples=self.max_samples,
+            max_tokens=self.max_tokens,
+        )
+
+    def test_classification(self):
+        batched_dataset = self._dummy_classification_iterator()
+        # Try iterating
+        for x, y in batched_dataset:
+            # check dimension
+            self.assertEqual(x.sequences.shape[0], max(x.lengths))
+            self.assertLessEqual(x.sequences.shape[1], self.max_samples)
+            self.assertLessEqual(
+                len([
+                    w for seq in x.sequences
+                    for w in seq
+                    if x != batched_dataset.pad_idx
+                ]),
+                self.max_tokens
+            )
+            self.assertEqual(len(y.shape), 1)
+            self.assertEqual(x.sequences.shape[1], y.shape[0])
+
+    def test_regression(self):
+        batched_dataset = self._dummy_regression_iterator()
+        # Try iterating
+        for x, y in batched_dataset:
+            # check dimension
+            self.assertEqual(x.sequences.shape[0], max(x.lengths))
+            self.assertLessEqual(x.sequences.shape[1], self.max_samples)
+            self.assertLessEqual(
+                len([
+                    w for seq in x.sequences
+                    for w in seq
+                    if x != batched_dataset.pad_idx
+                ]),
+                self.max_tokens
+            )
+            self.assertEqual(y.shape[0], self.output_dim)
+            self.assertEqual(x.sequences.shape[1], y.shape[1])
+
+    def test_shuffle(self):
+        batched_dataset = self._dummy_classification_iterator(shuffle=True)
+        # Record the labels for the first 2 epochs
+        first_epoch_labels = np.concatenate([y for _, y in batched_dataset])
+        second_epoch_labels = np.concatenate([y for _, y in batched_dataset])
+        # Check that the labels are not all equals (the probability that this
+        # happens by chance and the test fails is very low given the number of
+        # labels)
+        self.assertFalse(np.allclose(first_epoch_labels, second_epoch_labels))
+
+    def test_no_shuffle(self):
+        batched_dataset = self._dummy_classification_iterator(shuffle=False)
+        # Record the labels for the first 2 epochs
+        first_epoch_labels = np.concatenate([y for _, y in batched_dataset])
+        second_epoch_labels = np.concatenate([y for _, y in batched_dataset])
+        # Check that the labels are not all equals (the probability that this
+        # happens by chance and the test fails is very low given the number of
+        # labels)
+        self.assertTrue(np.allclose(first_epoch_labels, second_epoch_labels))
+
+    def test_length(self):
+        batched_dataset = self._dummy_classification_iterator()
+        num_batches = len([x for x in batched_dataset])
+        self.assertEqual(num_batches, len(batched_dataset))
+
+    def test_getitem(self):
+        batched_dataset = self._dummy_classification_iterator()
+        batched_dataset[0]
+        batched_dataset[1:3]
+        batched_dataset[1:10:2]
+        batched_dataset[10:1:-2]
         batched_dataset[::-1]
 
 
