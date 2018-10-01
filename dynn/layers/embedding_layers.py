@@ -5,11 +5,14 @@ Embedding layers
 
 For embedding discrete inputs (such as words, characters).
 """
+from collections import Iterable
+
 import numpy as np
 import dynet as dy
 
 from ..data.dictionary import Dictionary
 from ..parameter_initialization import NormalInit
+from ..operations import unsqueeze
 from .base_layers import ParametrizedLayer
 
 
@@ -84,19 +87,32 @@ class EmbeddingLayer(ParametrizedLayer):
         self.test = test
         self.update = update
 
-    def __call__(self, idx):
+    def __call__(self, idxs):
         """Returns the input's embedding
 
-        If ``idx`` is a list this returns a batch of embeddings
+        If ``idxs`` is a list this returns a batch of embeddings. If it's a
+        numpy array of shape ``N x b`` it returns a batch of ``b``
+        ``N x embed_dim`` matrices
 
         Args:
-            idx (list,int): Index or list of indices to embed
+            idxs (list,int): Index or list of indices to embed
 
         Returns:
             :py:class:`dynet.Expression`: Batch of embeddings
         """
-        # Handle int inputs
-        if isinstance(idx, int):
-            idx = [idx]
-        # Lookup batch
-        return dy.lookup_batch(self.params, idx, update=self.update)
+        if not isinstance(idxs, Iterable):
+            # Handle int inputs
+            idxs = [idxs]
+        elif not isinstance(idxs[0], Iterable):
+            # List of indices
+            return dy.lookup_batch(self.params, idxs, update=self.update)
+        elif isinstance(idxs, np.ndarray):
+            # Matrix of indices
+            vecs = [dy.lookup_batch(self.params, idx, update=self.update)
+                    for idx in idxs]
+            return dy.concatenate([unsqueeze(vec, d=0) for vec in vecs], d=0)
+        else:
+            raise ValueError(
+                "EmbeddingLayer only takes an int , list of ints or matrix of "
+                "ints as input"
+            )
