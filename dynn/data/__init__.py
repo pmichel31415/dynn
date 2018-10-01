@@ -14,10 +14,12 @@ from . import (
     batching,
     mnist,
     cifar10,
+    trees,
 )
 
 __all__ = [
     "batching",
     "mnist",
     "cifar10",
+    "trees",
 ]
