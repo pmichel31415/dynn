@@ -8,7 +8,7 @@ import numpy as np
 from dynn.data import batching
 
 
-class TestNum(TestCase):
+class TestNumpyBatchIterator(TestCase):
 
     def setUp(self):
         self.input_dim = 3
