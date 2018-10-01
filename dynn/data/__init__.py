@@ -14,6 +14,7 @@ from . import (
     batching,
     mnist,
     cifar10,
+    dictionary,
     trees,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "batching",
     "mnist",
     "cifar10",
+    "dictionary",
     "trees",
 ]
