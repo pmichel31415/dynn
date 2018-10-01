@@ -61,6 +61,8 @@ class Dictionary(object):
                 raise ValueError(f"{symbol} not in dictionary")
             else:
                 return self.unk_idx
+        # Otherwise return index
+        return self.indices[symbol]
 
     def add(self, symbol):
         """Add a symbol to the dictionary and return its index
@@ -97,6 +99,20 @@ class Dictionary(object):
         a lot. You should freeze it after reading the train data.
         """
         self.frozen = False
+
+    def numberize(self, data):
+        """Recursively descend into ``data`` and convert strings to indices.
+
+        Args:
+            data (list,str): Either a string or a list (of list)* of strings
+
+        Returns:
+            list,int: Same structure but with indices instead of strings
+        """
+        if isinstance(data, str):
+            return self.index(data)
+        else:
+            return [self.numberize(item) for item in data]
 
     @staticmethod
     def from_data(
