@@ -24,7 +24,6 @@ dy.reset_random_seed(31415)
 # Master parameter collection
 pc = dy.ParameterCollection()
 
-# TODO: check pooling/conv dimensions
 # Network
 network = StackedLayers(
     # First conv + maxpool layer

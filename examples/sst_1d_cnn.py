@@ -3,6 +3,7 @@
 from math import ceil
 import time
 
+import numpy as np
 import dynet as dy
 
 from dynn.layers.dense_layers import DenseLayer
@@ -18,6 +19,7 @@ from dynn.data.batching import PaddedSequenceBatchIterator
 
 # For reproducibility
 dy.reset_random_seed(31415)
+np.random.seed(51413)
 
 # Data
 # ====
@@ -84,11 +86,11 @@ network = StackedLayers(
     # Max pooling
     MaxPooling1DLayer(),
     # Softmax layer
-    DenseLayer(pc, HIDDEN_DIM, N_CLASSES, activation=identity, dropout=0.1),
+    DenseLayer(pc, HIDDEN_DIM, N_CLASSES, activation=identity, dropout=0.5),
 )
 
 # Optimizer
-trainer = dy.MomentumSGDTrainer(pc, learning_rate=0.01, mom=0.9)
+trainer = dy.RMSPropTrainer(pc, learning_rate=0.001)
 
 
 # Training
@@ -122,7 +124,6 @@ for epoch in range(5):
     print(f"Took {time.time()-start_time:.1f}s")
     print("=" * 20)
     # Validate
-    # Test
     accuracy = 0
     for batch, y in dev_batches:
         # Renew the computation graph
