@@ -103,8 +103,6 @@ class Conv1DLayer(ParametrizedLayer):
             self.zero_padded if zero_padded is None else zero_padded
         )
         stride = [stride or self.stride or 1, 1]
-        # Convolution
-        is_valid = not zero_padded
         if self.nobias:
             output_img = dy.conv2d(
                 img, self.K, stride=stride, is_valid=is_valid

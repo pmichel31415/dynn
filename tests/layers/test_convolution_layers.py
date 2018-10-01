@@ -42,6 +42,8 @@ class TestConv1DLayer(TestCase):
         z.forward()
         z.backward()
         # Check dimensions
+        if zero_padded is None:
+            zero_padded = conv1d.zero_padded
         out_length = self.N if zero_padded else (
             self.N - conv1d.kernel_width + 1
         )
