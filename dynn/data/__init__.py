@@ -9,11 +9,13 @@ Supported datasets are:
 
 - `MNIST <http://yann.lecun.com/exdb/mnist/>`_
 - `CIFAR-10 <https://www.cs.toronto.edu/~kriz/cifar.html>`_
+- `SST <https://nlp.stanford.edu/sentiment/index.html>`_
 """
 from . import (
     batching,
     mnist,
     cifar10,
+    sst,
     dictionary,
     trees,
 )
@@ -22,6 +24,7 @@ __all__ = [
     "batching",
     "mnist",
     "cifar10",
+    "sst",
     "dictionary",
     "trees",
 ]
