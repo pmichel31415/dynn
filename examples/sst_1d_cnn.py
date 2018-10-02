@@ -67,7 +67,7 @@ pc = dy.ParameterCollection()
 
 
 # Embeddings Layer
-embeddings = EmbeddingLayer(pc, dic, EMBED_DIM)
+embeddings = EmbeddingLayer(pc, dic, EMBED_DIM, pad_mask=0.0)
 # Convolutions
 conv1d = [
     Conv1DLayer(pc, EMBED_DIM, HIDDEN_DIM//4, 1, activation=relu),

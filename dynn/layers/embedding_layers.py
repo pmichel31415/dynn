@@ -44,9 +44,18 @@ class EmbeddingLayer(ParametrizedLayer):
         initialization (:py:class:`dynet.PyInitializer`, optional): How
             to initialize the parameters. By default this will initialize
             to :math:`\mathcal N(0, \\frac{`}{\sqrt{\\textt{embed\_dim}}})`
+        pad_mask (float, optional): If provided, embeddings of the
+            ``dictionary.pad_idx`` index will be masked with this value
     """
 
-    def __init__(self, pc, dictionary, embed_dim, initialization=None):
+    def __init__(
+        self,
+        pc,
+        dictionary,
+        embed_dim,
+        initialization=None,
+        pad_mask=None
+    ):
         super(EmbeddingLayer, self).__init__(pc, "embedding")
         # Check input
         if not isinstance(dictionary, Dictionary):
@@ -57,6 +66,7 @@ class EmbeddingLayer(ParametrizedLayer):
         self.dictionary = dictionary
         self.size = len(self.dictionary)
         self.embed_dim = embed_dim
+        self.pad_mask = pad_mask
         # Default init
         initialization = initialization or NormalInit(
             mean=0, std=1.0 / np.sqrt(self.size)
@@ -103,10 +113,11 @@ class EmbeddingLayer(ParametrizedLayer):
         if not isinstance(idxs, Iterable):
             # Handle int inputs
             idxs = [idxs]
-        elif not isinstance(idxs[0], Iterable):
+        idxs = np.asarray(idxs, dtype=int)
+        if len(idxs.shape) == 1:
             # List of indices
-            return dy.lookup_batch(self.params, idxs, update=self.update)
-        elif isinstance(idxs, np.ndarray):
+            embeds = dy.lookup_batch(self.params, idxs, update=self.update)
+        elif len(idxs.shape) == 2:
             # Matrix of indices
             vecs = [dy.lookup_batch(self.params, idx, update=self.update)
                     for idx in idxs]
@@ -116,3 +127,11 @@ class EmbeddingLayer(ParametrizedLayer):
                 "EmbeddingLayer only takes an int , list of ints or matrix of "
                 "ints as input"
             )
+
+        # Masking
+        if self.pad_mask is not None:
+            is_padding = (idxs == self.dictionary).astype(int)
+            mask = unsqueeze(dy.inputVector(is_padding, batched=True), d=-2)
+            embeds = dy.cmult(mask, embeds) + self.pad_mask * (1 - mask)
+
+        return embeds
