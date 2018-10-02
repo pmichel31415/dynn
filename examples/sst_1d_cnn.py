@@ -170,7 +170,7 @@ softmax_layer = network.layers[-1]
 softmax_weights = softmax_layer.W_p.expr(update=False)
 
 # Feature values
-feature_weights = (softmax_weights[0] - softmax_weights[1]).npvalue()
+feature_weights = (softmax_weights[1] - softmax_weights[0]).npvalue()
 
 # Word embeddings
 embed_layer = network.layers[0]
