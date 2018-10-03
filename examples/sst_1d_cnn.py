@@ -12,6 +12,7 @@ from dynn.layers.convolution_layers import Conv1DLayer
 from dynn.layers.pooling_layers import MaxPooling1DLayer
 from dynn.layers.combination_layers import StackedLayers, ConcatenatedLayers
 from dynn.activations import relu, identity
+from dynn.parameter_initialization import NormalInit
 
 from dynn.data import sst
 from dynn.data.dictionary import Dictionary
@@ -45,7 +46,7 @@ test_x = dic.numberize(test_x)
 
 # Create the batch iterators
 train_batches = PaddedSequenceBatchIterator(
-    train_x, train_y, dic, max_samples=64, max_tokens=2000
+    train_x, train_y, dic, max_samples=64
 )
 dev_batches = PaddedSequenceBatchIterator(
     dev_x, dev_y, dic, max_samples=1, shuffle=False
@@ -60,6 +61,7 @@ test_batches = PaddedSequenceBatchIterator(
 # Hyper-parameters
 EMBED_DIM = 100
 HIDDEN_DIM = 512
+MAX_WIDTH = 4
 N_CLASSES = 2
 
 # Master parameter collection
@@ -70,10 +72,8 @@ pc = dy.ParameterCollection()
 embeddings = EmbeddingLayer(pc, dic, EMBED_DIM, pad_mask=0.0)
 # Convolutions
 conv1d = [
-    Conv1DLayer(pc, EMBED_DIM, HIDDEN_DIM//4, 1, activation=relu),
-    Conv1DLayer(pc, EMBED_DIM, HIDDEN_DIM//4, 2, activation=relu),
-    Conv1DLayer(pc, EMBED_DIM, HIDDEN_DIM//4, 3, activation=relu),
-    Conv1DLayer(pc, EMBED_DIM, HIDDEN_DIM//4, 4, activation=relu),
+    Conv1DLayer(pc, EMBED_DIM, HIDDEN_DIM//MAX_WIDTH, width, activation=relu)
+    for width in range(1, MAX_WIDTH+1)
 ]
 # Network
 network = StackedLayers(
@@ -162,88 +162,3 @@ accuracy /= test_batches.num_samples
 # Print final result
 print(f"Test accuracy: {accuracy*100:.2f}%")
 
-# Interpretation
-# ==============
-
-# Retrieve softmax weights
-softmax_layer = network.layers[-1]
-softmax_weights = softmax_layer.W_p.expr(update=False)
-
-# Feature values
-feature_weights = (softmax_weights[1] - softmax_weights[0]).npvalue()
-
-# Word embeddings
-embed_layer = network.layers[0]
-embeddings = embed_layer.params
-
-
-def top_k_ngrams(ngrams, k=10):
-    """Helper function to select the top k scoring ngrams"""
-    scores = np.zeros(len(ngrams))
-    for i in range(len(ngrams)):
-        scores[i] = sum(score for unigram, score in ngrams[i])
-    argtopk = np.argsort(scores)[-k:]
-    return [
-        (" ".join(dic[unigram] for unigram, score in ngrams[idx]), scores[idx])
-        for idx in argtopk
-    ]
-
-
-def top_ngrams_feature(feature_number, k=10, weight=1.0):
-    """Helper function to retrieve the highest scoring ngrams for a given
-    feature"""
-    dy.renew_cg()
-    # Retrieve the filter from the feature number
-    kernel_size = feature_number // (HIDDEN_DIM // 4) + 1
-    kernels = conv1d[kernel_size - 1].K_p.as_array()
-    idx = feature_number % (HIDDEN_DIM // 4)
-    kernel = dy.inputTensor(kernels[:, 0, :, idx])
-    # Get the embedding matrix
-    E = dy.transpose(embeddings.expr())
-    # Get the k^filter_width top filters
-    top_ngrams = [[]]
-    for i in range(kernel_size):
-        unigram_scores = (E * kernel[i]).npvalue()
-        top_unigrams = unigram_scores.argsort()[-k:]
-        new_top_ngrams = []
-        for ngram in top_ngrams:
-            for unigram in top_unigrams:
-                new_ngram = ngram[:]
-                new_ngram.append((unigram, unigram_scores[unigram] * weight))
-                new_top_ngrams.append(new_ngram)
-        top_ngrams = new_top_ngrams[:]
-    # Only keep the top k
-    topk = top_k_ngrams(top_ngrams, k=k)
-
-    return topk
-
-
-# Top 10 negative ngrams
-negative_ngrams = []
-most_negative_features = feature_weights.argsort()[:10]
-for feature in most_negative_features:
-    negative_ngrams.extend(
-        top_ngrams_feature(feature, 10, -feature_weights[feature])
-    )
-
-topk_negative_ngrams = sorted(negative_ngrams, key=lambda x: x[1])[-10:]
-
-
-# Top 10 positive ngrams
-positive_ngrams = []
-most_positive_features = feature_weights.argsort()[-10:]
-for feature in most_positive_features:
-    positive_ngrams.extend(
-        top_ngrams_feature(feature, 10, feature_weights[feature])
-    )
-
-topk_positive_ngrams = sorted(positive_ngrams, key=lambda x: x[1])[-10:]
-
-# Print the result
-print("Top 10 negative n-grams:")
-for negative_ngram, score in topk_negative_ngrams:
-    print(f" - score={score} : \"{negative_ngram}\"")
-print("")
-print("Top 10 positive n-grams:")
-for positive_ngram, score in topk_positive_ngrams:
-    print(f" - score={score} : \"{positive_ngram}\"")

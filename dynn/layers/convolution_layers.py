@@ -57,7 +57,8 @@ class Conv1DLayer(ParametrizedLayer):
         # Filters have shape:
         #   input_dim x kernel_width x 1 x num_filters
         self.K_p = self.pc.add_parameters(
-            (self.kernel_width, 1, self.input_dim, self.num_kernels), name="K"
+            (self.kernel_width, 1, self.input_dim, self.num_kernels),
+            name="K"
         )
         if not self.nobias:
             self.b_p = self.pc.add_parameters(
