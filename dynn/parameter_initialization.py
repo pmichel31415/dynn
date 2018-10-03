@@ -56,4 +56,4 @@ def NormalInit(mean=0, std=1):
             ``dy.NormalInitializer(mean, sqrt(std))``
     """
 
-    return dy.NormalInitializer(mean, np.sqrt(std))
+    return dy.NormalInitializer(mean, std**2)
