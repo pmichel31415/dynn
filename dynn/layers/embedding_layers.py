@@ -68,9 +68,8 @@ class EmbeddingLayer(ParametrizedLayer):
         self.embed_dim = embed_dim
         self.pad_mask = pad_mask
         # Default init
-        initialization = initialization or NormalInit(
-            mean=0, std=1.0 / np.sqrt(self.size)
-        )
+        default_init = NormalInit(std=1/np.sqrt(self.embed_dim))
+        initialization = initialization or default_init
         # Parameter shape for dynet
         if isinstance(embed_dim, (list, tuple, np.ndarray)):
             param_dim = tuple([self.size] + [dim for dim in embed_dim])
@@ -121,7 +120,7 @@ class EmbeddingLayer(ParametrizedLayer):
             # Matrix of indices
             vecs = [dy.lookup_batch(self.params, idx, update=self.update)
                     for idx in idxs]
-            return dy.concatenate([unsqueeze(vec, d=0) for vec in vecs], d=0)
+            embeds = dy.concatenate([unsqueeze(vec, d=0) for vec in vecs], d=0)
         else:
             raise ValueError(
                 "EmbeddingLayer only takes an int , list of ints or matrix of "
@@ -130,8 +129,8 @@ class EmbeddingLayer(ParametrizedLayer):
 
         # Masking
         if self.pad_mask is not None:
-            is_padding = (idxs == self.dictionary).astype(int)
-            mask = unsqueeze(dy.inputVector(is_padding, batched=True), d=-2)
-            embeds = dy.cmult(mask, embeds) + self.pad_mask * (1 - mask)
+            is_padding = (idxs == self.dictionary.pad_idx).astype(int)
+            mask = unsqueeze(dy.inputTensor(is_padding, batched=True), d=-1)
+            embeds = dy.cmult(1-mask, embeds) + self.pad_mask * mask
 
         return embeds
