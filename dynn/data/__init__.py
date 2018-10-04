@@ -13,6 +13,7 @@ Supported datasets are:
 """
 from . import (
     batching,
+    preprocess,
     mnist,
     cifar10,
     sst,
@@ -22,6 +23,7 @@ from . import (
 
 __all__ = [
     "batching",
+    "preprocess",
     "mnist",
     "cifar10",
     "sst",

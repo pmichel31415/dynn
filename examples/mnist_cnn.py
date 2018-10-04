@@ -14,6 +14,7 @@ from dynn.layers.combination_layers import StackedLayers, ConcatenatedLayers
 from dynn import activations
 
 from dynn.data import mnist
+from dynn.data import preprocess
 from dynn.data.batching import NumpyBatchIterator
 
 # For reproducibility
@@ -51,19 +52,21 @@ trainer = dy.MomentumSGDTrainer(pc, learning_rate=0.01, mom=0.9)
 # ====
 
 # Download MNIST
-mnist.download_mnist(".")
-
-# Load the data
+print("Loading MNIST data")
 (train_x, train_y), (test_x, test_y) = mnist.load_mnist(".")
 
+print("Normalizing pixel values")
+train_x, test_x = preprocess.normalize([train_x, test_x])
+
 # Create the batch iterators
+print("Creating batches")
 train_batches = NumpyBatchIterator(train_x, train_y, batch_size=64)
 test_batches = NumpyBatchIterator(test_x, test_y, batch_size=64, shuffle=False)
 
 # Training
 # ========
 
-# Start training
+print("Starting training")
 for epoch in range(5):
     # Time the epoch
     start_time = time.time()
