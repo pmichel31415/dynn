@@ -3,24 +3,22 @@
 from math import ceil
 import time
 
-import numpy as np
 import dynet as dy
 
+import dynn
 from dynn.layers.dense_layers import DenseLayer
 from dynn.layers.embedding_layers import EmbeddingLayer
 from dynn.layers.convolution_layers import Conv1DLayer
 from dynn.layers.pooling_layers import MaxPooling1DLayer
 from dynn.layers.combination_layers import StackedLayers, ConcatenatedLayers
 from dynn.activations import relu, identity
-from dynn.parameter_initialization import NormalInit
 
 from dynn.data import sst
 from dynn.data.dictionary import Dictionary
 from dynn.data.batching import PaddedSequenceBatchIterator
 
 # For reproducibility
-dy.reset_random_seed(31415)
-np.random.seed(51413)
+dynn.set_random_seed(31415)
 
 # Data
 # ====
@@ -161,4 +159,3 @@ for batch, y in test_batches:
 accuracy /= test_batches.num_samples
 # Print final result
 print(f"Test accuracy: {accuracy*100:.2f}%")
-

@@ -5,6 +5,7 @@ import time
 
 import dynet as dy
 
+import dynn
 from dynn.layers.dense_layers import DenseLayer
 from dynn.layers.convolution_layers import Conv2DLayer
 from dynn.layers.pooling_layers import MaxPooling2DLayer
@@ -16,7 +17,7 @@ from dynn.data import mnist
 from dynn.data.batching import NumpyBatchIterator
 
 # For reproducibility
-dy.reset_random_seed(31415)
+dynn.set_random_seed(31415)
 
 # Model
 # =====
