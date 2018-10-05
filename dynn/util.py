@@ -71,7 +71,7 @@ def conditional_dropout(x, dropout_rate, flag):
 
 # Masking
 def apply_mask(x, m, val):
-    return dy.cmult(x, 1-m) + val * m
+    return dy.cmult(x, 1-m) + val
 
 
 def _mask_batch(x, mask, value):
@@ -107,7 +107,10 @@ def mask_batches(x, mask, value=0.0):
         raise ValueError("x must be a dynet.Expression or an Iterable")
     # Get the mask expression
     if not isinstance(mask, dy.Expression):
+        mask_vals = mask[:]
         mask = dy.inputTensor(mask, batched=True)
+        mask_vals[mask_vals == 1] = value
+        mask_val = dy.inputTensor(mask_vals, batched=True)
     # Check that the mask has valid dimensions
     if any(dimension != 1 for dimension in mask.dim()[0]):
         raise ValueError(
@@ -115,7 +118,7 @@ def mask_batches(x, mask, value=0.0):
             f"the batch dimension, got {mask.dim()} instead."
         )
     # Actually do the masking
-    return _mask_batch(x, mask, value)
+    return _mask_batch(x, mask, mask_val)
 
 
 def _generate_mask(

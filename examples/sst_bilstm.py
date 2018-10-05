@@ -3,7 +3,6 @@
 from math import ceil
 import time
 
-import numpy as np
 import dynet as dy
 
 import dynn
@@ -97,7 +96,7 @@ class BiLSTM(object):
                                HIDDEN_DIM//2, dropout_h=0.1),
         )
         # Masking for the pooling layer
-        self.masking = SequenceMaskingLayer(mask_value=-np.inf)
+        self.masking = SequenceMaskingLayer(mask_value=-9999)
         # Pool and predict
         self.pool_and_predict = StackedLayers(
             # Max pooling
@@ -123,7 +122,8 @@ class BiLSTM(object):
         # Mask and stack to a matrix
         masked_H = stack(self.masking(H, lengths=batch.lengths), d=0)
         # Maxpool and get the logits
-        return self.pool_and_predict(masked_H)
+        logits = self.pool_and_predict(masked_H)
+        return logits
 
 
 # Instantiate the network
