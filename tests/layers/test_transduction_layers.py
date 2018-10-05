@@ -36,6 +36,63 @@ class TestFeedForwardTransductionLayer(TestCase):
         z.backward()
 
 
+class TestSequenceMaskingLayer(TestCase):
+
+    def setUp(self):
+        self.pc = dy.ParameterCollection()
+        self.do = 10
+        self.di = 20
+        self.bz = 6
+        self.lengths = [1, 2, 3, 4, 5, 6]
+        self.mask_value = 42.0
+
+    def test_left_padded(self):
+        # Create transduction layer
+        tranductor = transduction_layers.SequenceMaskingLayer(
+            mask_value=self.mask_value)
+        # Initialize computation graph
+        dy.renew_cg()
+        # Create inputs
+        seq = [dy.random_uniform(self.di, 0, i, self.bz) for i in range(6)]
+        # Initialize tranductor
+        tranductor.init(test=False, update=True)
+        # Run tranductor
+        outputs = tranductor(seq, self.lengths)
+        # Try forward/backward
+        z = dy.mean_batches(dy.sum_elems(dy.esum(outputs)))
+        z.forward()
+        z.backward(full=True)
+        # Check value
+        value = outputs[-1].npvalue()[0, 0]
+        self.assertAlmostEquals(value, self.mask_value, 10)
+        # Check gradient
+        grad = seq[-1].gradient()[:, 0]
+        self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
+
+    def test_right_padded(self):
+        # Create transduction layer
+        tranductor = transduction_layers.SequenceMaskingLayer(
+            mask_value=self.mask_value, left_padded=False)
+        # Initialize computation graph
+        dy.renew_cg()
+        # Create inputs
+        seq = [dy.random_uniform(self.di, 0, i, self.bz) for i in range(6)]
+        # Initialize tranductor
+        tranductor.init(test=False, update=True)
+        # Run tranductor
+        outputs = tranductor(seq, self.lengths)
+        # Try forward/backward
+        z = dy.mean_batches(dy.sum_elems(dy.esum(outputs)))
+        z.forward()
+        z.backward(full=True)
+        # Check value
+        value = outputs[0].npvalue()[0, 0]
+        self.assertAlmostEquals(value, self.mask_value, 10)
+        # Check gradient
+        grad = seq[0].gradient()[:, 0]
+        self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
+
+
 def _test_recurrent_layer_unidirectional_transduction(
     layer,
     dummy_input,

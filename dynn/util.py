@@ -70,36 +70,28 @@ def conditional_dropout(x, dropout_rate, flag):
 
 
 # Masking
-
-def add_mask(x, m):
-    return x + m
-
-
-def mul_mask(x, m):
-    return dy.cmult(x, m)
+def apply_mask(x, m, val):
+    return dy.cmult(x, 1-m) + val * m
 
 
-mask_functions = {"mul": mul_mask, "add": add_mask}
-
-
-def _mask_batch(x, mask, mask_func):
+def _mask_batch(x, mask, value):
     if isinstance(x, dy.Expression):
         # At the bottom of the recursion x is an expression
         # Reshape the mask
         mask_dim = tuple([1] * len(x.dim()[0]))
         batch_size = mask.dim()[1]
-        reshaped_mask = dy.reshape(mask, (mask_dim, batch_size))
+        reshaped_mask = dy.reshape(mask, mask_dim, batch_size=batch_size)
         # Apply the mask
-        return mask_func(x, reshaped_mask)
+        return apply_mask(x, reshaped_mask, value)
     else:
         # Otherwise iterate
         output = []
         for expression in x:
-            output.append(_mask_batch(expression, mask, mask_func))
+            output.append(_mask_batch(expression, mask, value))
         return output
 
 
-def mask_batches(x, mask, mode="mul"):
+def mask_batches(x, mask, value=0.0):
     """Apply a mask to the batch dimension
 
     Args:
@@ -108,8 +100,7 @@ def mask_batches(x, mask, mode="mul"):
             same batch dimension.
         mask (np.array, list, :py:class:`dynet.Expression`): The mask. Either
             a list, 1d numpy array or :py:class:`dynet.Expression`.
-        mode (str): One of "mul" and "add" for multiplicative and additive
-            masks respectively
+        value (float): Mask value
     """
     # Check x's type
     if not isinstance(x, (dy.Expression, Iterable)):
@@ -123,11 +114,8 @@ def mask_batches(x, mask, mode="mul"):
             f"Batch masks should have all dimensions == 1 except for "
             f"the batch dimension, got {mask.dim()} instead."
         )
-    # Define the masking function
-    if mode not in mask_functions:
-        raise ValueError(f"Unknown masking mode {mode}")
     # Actually do the masking
-    return _mask_batch(x, mask, mask_functions[mode])
+    return _mask_batch(x, mask, value)
 
 
 def _generate_mask(
@@ -145,11 +133,11 @@ def _generate_mask(
     # left/right padding
     if left_padded:
         # If the sequence is left padded
-        within_sequence = (np.full(batch_size, step) < lengths)
+        outside_sequence = (np.full(batch_size, step) >= lengths)
     else:
         # If the sequence is right padded
-        within_sequence = step_number >= (max_length - lengths)
-    return within_sequence.astype(int)
+        outside_sequence = step_number < (max_length - lengths)
+    return outside_sequence.astype(int)
 
 
 def _should_mask(step, min_length, max_length, left_padded):
@@ -159,4 +147,4 @@ def _should_mask(step, min_length, max_length, left_padded):
     if left_padded:
         return step >= min_length
     else:
-        return step + min_length > max_length
+        return step + min_length < max_length

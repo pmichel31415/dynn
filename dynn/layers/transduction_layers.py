@@ -56,6 +56,82 @@ class FeedForwardTransductionLayer(BaseLayer):
         return output_sequence
 
 
+class SequenceMaskingLayer(BaseLayer):
+    """Masks a sequence of batched expressions according to each batch
+    element's length
+
+    This layer applies a mask value to the elements of a sequence of batched
+    expressions which correspond to padding tokens. Typically if you batch a
+    sequence of size 2 and a sequence of size 3 you will pad the first sequence
+    to obtain a list of 3 expresions of batch size 2. This layer will mask the
+    batch element of the last expression corresponding to the padding token in
+    the 1st sequence.
+
+    This is useful when doing attention or max-pooling on padded sequences when
+    you want to mask padding tokens with :math:`-\infty` to ensure that they
+    are ignored.
+
+
+    Args:
+        mask_value (float, optional): The value to use for masking
+        left_padded (bool, optional): If the input sequences have different
+            lengths they must be padded to the length of longest sequence.
+            Use this to specify whether the sequence is left or right
+            padded.
+    """
+
+    def __init__(self, mask_value=0.0, left_padded=True):
+        self.mask_value = mask_value
+        self.left_padded = left_padded
+
+    def __call__(
+            self,
+            input_sequence,
+            lengths,
+            left_padded=None):
+        """Runs the layer over the input
+
+        The output is a list of the output of the layer at each step
+
+        Args:
+            input_sequence (list): Input as a list of
+                :py:class:`dynet.Expression` objects
+            lengths (list, optional): If the expressions in the sequence are
+                batched, but have different lengths, this should contain a list
+                of the sequence lengths (default: ``None``)
+            left_padded (bool, optional): If the input sequences have different
+                lengths they must be padded to the length of longest sequence.
+                Use this to specify whether the sequence is left or right
+                padded. Overwrites the value given in the constructor.
+
+        Returns:
+            list: List of masked expression
+        """
+        # Max length/ batch size
+        max_length = len(input_sequence)
+        batch_size = input_sequence[0].dim()[1]
+        # Overwrite left padding flag
+        left_padded = self.left_padded if left_padded is None else left_padded
+        # Start transducing
+        output_sequence = []
+        for step, x in enumerate(input_sequence):
+            # Perform masking if we need to
+            if _should_mask(step+1, min(lengths), max_length, left_padded):
+                # Generate the max depending on the position, padding, etc...
+                mask = _generate_mask(
+                    step+1, max_length, batch_size, lengths, left_padded
+                )
+                # Apply it
+                output_sequence.append(mask_batches(
+                    x, mask, value=self.mask_value))
+            else:
+                output_sequence.append(x)
+
+        return output_sequence
+        output_sequence = [self.layer(x) for x in input_sequence]
+        return output_sequence
+
+
 class UnidirectionalLayer(BaseLayer):
     """Unidirectional transduction layer
 
@@ -165,7 +241,7 @@ class UnidirectionalLayer(BaseLayer):
                     step+1, max_length, batch_size, lengths, left_padded
                 )
                 # Apply it
-                state = mask_batches(state, mask, mode="mul")
+                state = mask_batches(state, mask, value=0)
             # Add the masked state to the output
             output_sequence.append(state)
 
