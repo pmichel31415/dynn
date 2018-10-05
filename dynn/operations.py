@@ -70,3 +70,24 @@ def unsqueeze(x, d=0):
     new_dim = list(dim)
     new_dim.insert(d, 1)
     return dy.reshape(x, tuple(new_dim), batch_size=batch_size)
+
+
+def stack(xs, d=0):
+    """Like concatenated but inserts a dimension
+
+    ``d=-1`` to insert a dimension at the last position
+
+    Args:
+        xs (list): List of expressions with the same dimensions
+        d (int, optional): Position of the dimension ypu want to insert
+    """
+    xs = [unsqueeze(x, d=d) for x in xs]
+    dim, _ = xs[0].dim()
+    if d < 0:
+        d += len(dim)
+    if d < 0 or d > len(dim):
+        raise ValueError(
+            f"Cannot insert dimension at position {d} out of bounds "
+            f"for {len(dim)}-dimensional expressions"
+        )
+    return dy.concatenate(xs, d=d)
