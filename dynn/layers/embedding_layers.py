@@ -130,7 +130,13 @@ class EmbeddingLayer(ParametrizedLayer):
         # Masking
         if self.pad_mask is not None:
             is_padding = (idxs == self.dictionary.pad_idx).astype(int)
-            mask = unsqueeze(dy.inputTensor(is_padding, batched=True), d=-1)
+            mask = dy.inputTensor(is_padding, batched=True)
+            # Insert a dimension of size 1 for the embedding dimension
+            # This is automatic when the input is only 1 index per batch
+            # element
+            if len(idxs.shape) == 2:
+                mask = unsqueeze(mask, d=-1)
+            # Apply the mask
             embeds = dy.cmult(1-mask, embeds) + self.pad_mask * mask
 
         return embeds
