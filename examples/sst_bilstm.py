@@ -3,7 +3,6 @@
 from math import ceil
 import time
 
-# import numpy as np
 import dynet as dy
 
 import dynn
@@ -61,10 +60,10 @@ train_batches = PaddedSequenceBatchIterator(
     train_x, train_y, dic, max_samples=32, group_by_length=True
 )
 dev_batches = PaddedSequenceBatchIterator(
-    dev_x, dev_y, dic, max_samples=1, shuffle=False
+    dev_x, dev_y, dic, max_samples=32, shuffle=False
 )
 test_batches = PaddedSequenceBatchIterator(
-    test_x, test_y, dic, max_samples=1, shuffle=False
+    test_x, test_y, dic, max_samples=32, shuffle=False
 )
 
 # Model
@@ -72,7 +71,7 @@ test_batches = PaddedSequenceBatchIterator(
 
 # Hyper-parameters
 EMBED_DIM = 100
-HIDDEN_DIM = 256
+HIDDEN_DIM = 512
 N_CLASSES = 2
 
 # Define the network as a custom layer
@@ -90,9 +89,9 @@ class BiLSTM(object):
         # BiLSTM
         self.bilstm = BidirectionalLayer(
             forward_cell=LSTM(self.pc, EMBED_DIM,
-                              HIDDEN_DIM, dropout_h=0.1),
+                              HIDDEN_DIM, dropout_h=0.5, dropout_x=0.5),
             backward_cell=LSTM(self.pc, EMBED_DIM,
-                               HIDDEN_DIM, dropout_h=0.1),
+                               HIDDEN_DIM, dropout_h=0.5, dropout_x=0.5),
             output_only=True,
         )
         # Pooling layer
@@ -131,7 +130,9 @@ trainer = dy.AdamTrainer(network.pc, alpha=0.001)
 # Training
 # ========
 
+# Start training
 print("Starting training")
+best_accuracy = 0
 # Start training
 for epoch in range(10):
     # Time the epoch
@@ -176,9 +177,20 @@ for epoch in range(10):
     accuracy /= dev_batches.num_samples
     # Print final result
     print(f"Dev accuracy: {accuracy*100:.2f}%")
+    # Early stopping
+    if accuracy > best_accuracy:
+        best_accuracy = accuracy
+        network.pc.save("sst_bilstm.model")
+    else:
+        print(f"Early stopping with best accuracy {best_accuracy*100:.2f}%")
+        break
 
 # Testing
 # =======
+
+# Load model
+print("Reloading best model")
+network.pc.populate("sst_bilstm.model")
 
 # Test
 accuracy = 0

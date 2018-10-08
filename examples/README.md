@@ -21,4 +21,14 @@ On a Titan X GPU this runs in ~=4.6s per epoch. The test accuracy after 5 epochs
 python sst_1d_cnn.py --dynet-gpus 1
 ```
 
-On a GTX 1080 Ti GPU this runs in ~=1.9s per epoch. The test accuracy after 5 epochs is **81.55%**.
+On a Titan X GPU this runs in ~=1.8s per epoch. The test accuracy after 5 epochs is **84.62%**.
+
+## BiLSTM SST
+
+[`sst_bilstm.py`](sst_bilstm.py) implements a simple BiLSTM + mean pooling architecture for sentiment classification on the Stanford Sentiment Treebank. Run it with:
+
+```bash
+python sst_bilstm.py --dynet-gpus 1
+```
+
+On a Titan X GPU this runs in ~=6.3s per epoch. The test accuracy after 2 epochs is **90.99%**.

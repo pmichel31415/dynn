@@ -14,6 +14,7 @@ from dynn.layers.combination_layers import StackedLayers, ConcatenatedLayers
 from dynn.activations import relu, identity
 
 from dynn.data import sst
+from dynn.data import preprocess
 from dynn.data.dictionary import Dictionary
 from dynn.data.batching import PaddedSequenceBatchIterator
 
@@ -27,39 +28,48 @@ dynn.set_random_seed(31415)
 sst.download_sst(".")
 
 # Load the data
+print("Loading the SST data")
 (
     (train_x, train_y),
     (dev_x, dev_y),
     (test_x, test_y),
 ) = sst.load_sst(".", terminals_only=True, binary=True)
 
+# Lowercase
+print("Lowercasing")
+train_x, dev_x, test_x = preprocess.lowercase([train_x, dev_x, test_x])
+
 # Learn the dictionary
+print("Building the dictionary")
 dic = Dictionary.from_data(train_x)
 dic.freeze()
 
 # Numberize the data
+print("Numberizing")
 train_x = dic.numberize(train_x)
 dev_x = dic.numberize(dev_x)
 test_x = dic.numberize(test_x)
 
+
 # Create the batch iterators
+print("Creating batch iterators")
 train_batches = PaddedSequenceBatchIterator(
-    train_x, train_y, dic, max_samples=64
+    train_x, train_y, dic, max_samples=64, group_by_length=True
 )
 dev_batches = PaddedSequenceBatchIterator(
-    dev_x, dev_y, dic, max_samples=1, shuffle=False
+    dev_x, dev_y, dic, max_samples=32, shuffle=False
 )
 test_batches = PaddedSequenceBatchIterator(
-    test_x, test_y, dic, max_samples=1, shuffle=False
+    test_x, test_y, dic, max_samples=32, shuffle=False
 )
 
 # Model
 # =====
 
 # Hyper-parameters
-EMBED_DIM = 100
-HIDDEN_DIM = 512
-MAX_WIDTH = 4
+EMBED_DIM = 300
+FILTERS = {1: 128, 2: 256, 3: 256}
+HIDDEN_DIM = sum(FILTERS.values()) 
 N_CLASSES = 2
 
 # Master parameter collection
@@ -70,8 +80,8 @@ pc = dy.ParameterCollection()
 embeddings = EmbeddingLayer(pc, dic, EMBED_DIM, pad_mask=0.0)
 # Convolutions
 conv1d = [
-    Conv1DLayer(pc, EMBED_DIM, HIDDEN_DIM//MAX_WIDTH, width, activation=relu)
-    for width in range(1, MAX_WIDTH+1)
+    Conv1DLayer(pc, EMBED_DIM, number, width, activation=relu)
+    for width, number in FILTERS.items()
 ]
 # Network
 network = StackedLayers(
@@ -88,14 +98,16 @@ network = StackedLayers(
 )
 
 # Optimizer
-trainer = dy.RMSPropTrainer(pc, learning_rate=0.001)
+trainer = dy.MomentumSGDTrainer(pc, learning_rate=0.01, mom=0.9)
 
 
 # Training
 # ========
 
 # Start training
-for epoch in range(5):
+print("Starting training")
+best_accuracy = 0
+for epoch in range(10):
     # Time the epoch
     start_time = time.time()
     for batch, y in train_batches:
@@ -121,6 +133,8 @@ for epoch in range(5):
     print(f"Epoch {epoch+1}@100%: NLL={nll.value():.3f}")
     print(f"Took {time.time()-start_time:.1f}s")
     print("=" * 20)
+    # Lower learning rate
+    trainer.learning_rate *= 0.5
     # Validate
     accuracy = 0
     for batch, y in dev_batches:
@@ -138,9 +152,20 @@ for epoch in range(5):
     accuracy /= dev_batches.num_samples
     # Print final result
     print(f"Dev accuracy: {accuracy*100:.2f}%")
+    # Early stopping
+    if accuracy > best_accuracy:
+        best_accuracy = accuracy
+        pc.save("sst_1d_cnn.model")
+    else:
+        print(f"Early stopping with best accuracy {best_accuracy*100:.2f}%")
+        break
 
 # Testing
 # =======
+
+# Load model
+print("Reloading best model")
+pc.populate("sst_1d_cnn.model")
 
 # Test
 accuracy = 0
