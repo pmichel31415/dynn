@@ -206,24 +206,11 @@ class UnidirectionalLayer(BaseLayer):
         batch_size = input_sequence[0].dim()[1]
         # Reverse the sequence for backward transduction
         max_length = len(input_sequence)
+        min_length = max_length if lengths is None else min(lengths)
         if backward:
             input_sequence = reversed(input_sequence)
             # Padding is also reversed
             left_padded = not left_padded
-        # Masking
-        # TODO: separate function to make this code reusable as an iterator
-        if lengths is None:
-            # If we're not provided with a `length` argument no need
-            # to do masking
-            def do_masking(step): return False
-        else:
-            # This function will decide whether we need to apply a mask or not.
-            # In particular we don't want to do masking if the mask is going to
-            # be all ones
-            def do_masking(step):
-                return _should_mask(
-                    step, min(lengths), max_length, left_padded
-                )
         # Initial recurrent state provided by the recurrent cell
         state = self.cell.initial_value(batch_size=batch_size)
         # Start transducing
@@ -235,7 +222,7 @@ class UnidirectionalLayer(BaseLayer):
             state = self.cell(x, *state)
             # Perform masking if we need to
             # TODO: masking -> interpolation with initial state
-            if do_masking(step):
+            if _should_mask(step, min_length, max_length, left_padded):
                 # Generate the max depending on the position, padding, etc...
                 mask = _generate_mask(
                     step, max_length, batch_size, lengths, left_padded
@@ -246,7 +233,7 @@ class UnidirectionalLayer(BaseLayer):
             output_sequence.append(state)
 
         if backward:
-            output_sequence = reversed(output_sequence)
+            output_sequence = output_sequence[::-1]
         return output_sequence
 
 

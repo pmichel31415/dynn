@@ -76,6 +76,33 @@ class TestUtil(TestCase):
             x.npvalue()
         ))
 
+    def test_should_mask_left_padded(self):
+        max_length = 5
+        min_length = 3
+        # For left padded sequences
+        should_mask = [False, False, False, True, True]
+        for step in range(max_length):
+            self.assertEqual(
+                should_mask[step],
+                util._should_mask(
+                    step,
+                    min_length,
+                    max_length,
+                    True,
+                )
+            )
+        should_mask = [True, True, False, False, False]
+        for step in range(max_length):
+            self.assertEqual(
+                should_mask[step],
+                util._should_mask(
+                    step,
+                    min_length,
+                    max_length,
+                    False,
+                )
+            )
+
 
 if __name__ == '__main__':
     unittest.main()

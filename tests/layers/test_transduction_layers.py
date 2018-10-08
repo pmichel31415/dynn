@@ -63,11 +63,16 @@ class TestSequenceMaskingLayer(TestCase):
         z.forward()
         z.backward(full=True)
         # Check value
-        value = outputs[-1].npvalue()[0, 0]
-        self.assertAlmostEquals(value, self.mask_value, 10)
-        # Check gradient
-        grad = seq[-1].gradient()[:, 0]
-        self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
+        for idx, length in enumerate(self.lengths):
+            for step in range(length, len(seq)):
+                values = outputs[step].npvalue()[:, idx]
+                for value in values:
+                    self.assertAlmostEquals(value, self.mask_value, 10)
+        # Check gradients
+        for idx, length in enumerate(self.lengths):
+            for step in range(length, len(seq)):
+                grad = seq[step].gradient()[:, idx]
+                self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
 
     def test_right_padded(self):
         # Create transduction layer
@@ -86,40 +91,18 @@ class TestSequenceMaskingLayer(TestCase):
         z.forward()
         z.backward(full=True)
         # Check value
+        for idx, length in enumerate(self.lengths):
+            for step in range(len(seq)-length):
+                values = outputs[step].npvalue()[:, idx]
+                for value in values:
+                    self.assertAlmostEquals(value, self.mask_value, 10)
         value = outputs[0].npvalue()[0, 0]
         self.assertAlmostEquals(value, self.mask_value, 10)
-        # Check gradient
-        grad = seq[0].gradient()[:, 0]
-        self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
-
-
-def _test_recurrent_layer_unidirectional_transduction(
-    layer,
-    dummy_input,
-    lengths,
-    backward,
-    left_padded,
-
-
-):
-    # Create transduction layer
-    tranductor = transduction_layers.UnidirectionalLayer(layer)
-    # Initialize computation graph
-    dy.renew_cg()
-    # Create inputs
-    seq = [
-        dy.inputTensor(dummy_input, batched=True) + i for i in range(10)
-    ]
-    # Initialize tranductor
-    tranductor.init(test=False, update=True)
-    # Run tranductor
-    states = tranductor(
-        seq, lengths=lengths, backward=backward, left_padded=left_padded
-    )
-    # Try forward/backward
-    z = dy.mean_batches(dy.esum([dy.sum_elems(state[0]) for state in states]))
-    z.forward()
-    z.backward()
+        # Check gradients
+        for idx, length in enumerate(self.lengths):
+            for step in range(len(seq)-length):
+                grad = seq[step].gradient()[:, idx]
+                self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
 
 
 class TestUnidirectionalLayer(TestCase):
@@ -136,6 +119,50 @@ class TestUnidirectionalLayer(TestCase):
             [True, False],  # left_padded
         )
 
+    def _test_recurrent_layer_unidirectional_transduction(
+        self,
+        layer,
+        dummy_input,
+        lengths,
+        backward,
+        left_padded,
+    ):
+        # Create transduction layer
+        tranductor = transduction_layers.UnidirectionalLayer(layer)
+        # Initialize computation graph
+        dy.renew_cg()
+        # Create inputs
+        seq = [
+            dy.inputTensor(dummy_input, batched=True) + i for i in range(10)
+        ]
+        # Initialize tranductor
+        tranductor.init(test=False, update=True)
+        # Run tranductor
+        states = tranductor(
+            seq, lengths=lengths, backward=backward, left_padded=left_padded
+        )
+        # Try forward/backward
+        z = dy.mean_batches(
+            dy.esum([dy.sum_elems(state[0]) for state in states]))
+        z.forward()
+        z.backward(full=True)
+        # check masking
+        if lengths is not None:
+            for idx, length in enumerate(lengths):
+                if left_padded:
+                    masked_steps = range(length, len(seq))
+                else:
+                    masked_steps = range(len(seq)-length)
+                # Values
+                for step in masked_steps:
+                    for state in states[step]:
+                        values = state.npvalue()[:, idx]
+                        for value in values:
+                            self.assertAlmostEquals(value, 0, 10)
+                    # Check gradients
+                    grad = seq[step].gradient()[:, idx]
+                    self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
+
     def test_elman_rnn(self):
         # Create lstm layer
         lstm = recurrent_layers.ElmanRNN(
@@ -146,7 +173,7 @@ class TestUnidirectionalLayer(TestCase):
             print(f"- lengths=: {lengths}")
             print(f"- backward=: {backward}")
             print(f"- left_padded=: {left_padded}")
-            _test_recurrent_layer_unidirectional_transduction(
+            self._test_recurrent_layer_unidirectional_transduction(
                 lstm,
                 np.random.rand(self.di, self.bz),
                 lengths,
@@ -168,46 +195,13 @@ class TestUnidirectionalLayer(TestCase):
             print(f"- lengths=: {lengths}")
             print(f"- backward=: {backward}")
             print(f"- left_padded=: {left_padded}")
-            _test_recurrent_layer_unidirectional_transduction(
+            self._test_recurrent_layer_unidirectional_transduction(
                 lstm,
                 np.random.rand(self.di, self.bz),
                 lengths,
                 backward,
                 left_padded
             )
-
-
-def _test_recurrent_layer_bidirectional_transduction(
-    fwd_layer,
-    bwd_layer,
-    dummy_input,
-    lengths,
-    left_padded,
-):
-    # Create transduction layer
-    tranductor = transduction_layers.BidirectionalLayer(fwd_layer, bwd_layer)
-    # Initialize computation graph
-    dy.renew_cg()
-    # Create inputs
-    seq = [
-        dy.inputTensor(dummy_input, batched=True) + i for i in range(10)
-    ]
-    # Initialize tranductor
-    tranductor.init(test=False, update=True)
-    # Run tranductor
-    fwd_states, bwd_states = tranductor(
-        seq, lengths=lengths, left_padded=left_padded
-    )
-    # Try forward/backward
-    fwd_z = dy.mean_batches(
-        dy.esum([dy.sum_elems(state[0]) for state in fwd_states])
-    )
-    bwd_z = dy.mean_batches(
-        dy.esum([dy.sum_elems(state[0]) for state in bwd_states])
-    )
-    z = fwd_z + bwd_z
-    z.forward()
-    z.backward()
 
 
 class TestBidirectionalLayer(TestCase):
@@ -223,6 +217,56 @@ class TestBidirectionalLayer(TestCase):
             [True, False],  # left_padded
         )
 
+    def _test_recurrent_layer_bidirectional_transduction(
+        self,
+        fwd_layer,
+        bwd_layer,
+        dummy_input,
+        lengths,
+        left_padded,
+    ):
+        # Create transduction layer
+        tranductor = transduction_layers.BidirectionalLayer(
+            fwd_layer, bwd_layer)
+        # Initialize computation graph
+        dy.renew_cg()
+        # Create inputs
+        seq = [
+            dy.inputTensor(dummy_input, batched=True) + i for i in range(10)
+        ]
+        # Initialize tranductor
+        tranductor.init(test=False, update=True)
+        # Run tranductor
+        fwd_states, bwd_states = tranductor(
+            seq, lengths=lengths, left_padded=left_padded
+        )
+        # Try forward/backward
+        fwd_z = dy.mean_batches(
+            dy.esum([dy.sum_elems(state[0]) for state in fwd_states])
+        )
+        bwd_z = dy.mean_batches(
+            dy.esum([dy.sum_elems(state[0]) for state in bwd_states])
+        )
+        z = fwd_z + bwd_z
+        z.forward()
+        z.backward()
+        # check masking
+        if lengths is not None:
+            for idx, length in enumerate(lengths):
+                if left_padded:
+                    masked_steps = range(length, len(seq))
+                else:
+                    masked_steps = range(len(seq)-length)
+                # Values
+                for step in masked_steps:
+                    for state in fwd_states[step] + bwd_states[step]:
+                        values = state.npvalue()[:, idx]
+                        for value in values:
+                            self.assertAlmostEquals(value, 0, 10)
+                    # Check gradients
+                    grad = seq[step].gradient()[:, idx]
+                    self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
+
     def test_bi_elman_rnn(self):
         # Create rnn layers
         fwd_rnn = recurrent_layers.ElmanRNN(
@@ -235,7 +279,7 @@ class TestBidirectionalLayer(TestCase):
             print(f"Testing with:")
             print(f"- lengths=: {lengths}")
             print(f"- left_padded=: {left_padded}")
-            _test_recurrent_layer_bidirectional_transduction(
+            self._test_recurrent_layer_bidirectional_transduction(
                 fwd_rnn,
                 bwd_rnn,
                 np.random.rand(self.di, self.bz),
@@ -264,7 +308,7 @@ class TestBidirectionalLayer(TestCase):
             print(f"Testing with:")
             print(f"- lengths=: {lengths}")
             print(f"- left_padded=: {left_padded}")
-            _test_recurrent_layer_bidirectional_transduction(
+            self._test_recurrent_layer_bidirectional_transduction(
                 fwd_lstm,
                 bwd_lstm,
                 np.random.rand(self.di, self.bz),
@@ -288,7 +332,7 @@ class TestBidirectionalLayer(TestCase):
             print(f"Testing with:")
             print(f"- lengths=: {lengths}")
             print(f"- left_padded=: {left_padded}")
-            _test_recurrent_layer_bidirectional_transduction(
+            self._test_recurrent_layer_bidirectional_transduction(
                 fwd_lstm,
                 bwd_rnn,
                 np.random.rand(self.di, self.bz),
