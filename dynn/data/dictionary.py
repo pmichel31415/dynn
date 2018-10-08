@@ -55,7 +55,7 @@ class Dictionary(object):
             int: Symbol index
         """
         # Handle unknown symbols
-        if symbol not in self.symbols:
+        if symbol not in self.indices:
             # Either fail or return ``unk_idx``
             if fail_if_unknown:
                 raise ValueError(f"{symbol} not in dictionary")
@@ -79,7 +79,7 @@ class Dictionary(object):
         """
 
         # Ignore existing symbols
-        if not self.frozen and symbol not in self.symbols:
+        if not self.frozen and symbol not in self.indices:
             self.indices[symbol] = len(self)
             self.symbols.append(symbol)
         # Return index
@@ -155,22 +155,23 @@ class Dictionary(object):
         # Sort by frequency decreasing frequency
         most_freq = sorted(most_freq.items(), key=lambda x: -x[1])
 
-        # Take top ``max_size`` most frequents
-        n_forced_symbols = 0 if symbols is None else len(symbols)
-        if max_size > 0 and n_forced_symbols > max_size:
-            logging.warning(
-                f"You requested a maximum dictionary size of {max_size} but "
-                f"provided {len(symbols)} to include. The dictionary will "
-                f"have size {len(symbols)}."
-            )
-        if max_size > 0 and max_size < len(most_freq) + n_forced_symbols:
-            most_freq = most_freq[:max(max_size - n_forced_symbols, 0)]
+        if max_size > 0:
+            # Take top ``max_size`` most frequents
+            n_forced_symbols = 0 if symbols is None else len(symbols)
+            if n_forced_symbols > max_size:
+                logging.warning(
+                    f"You requested a maximum dictionary size of {max_size} "
+                    f"but provided {len(symbols)} to include. The dictionary "
+                    f"will have size {len(symbols)}."
+                )
+            if max_size < len(most_freq) + n_forced_symbols:
+                most_freq = most_freq[:max(max_size - n_forced_symbols, 0)]
+
+        # Add symbols
+        symbols = symbols or []
+        symbols.extend([symbol for symbol, _ in most_freq])
 
         # Actually create dictionary
         dic = Dictionary(symbols=symbols, special_symbols=special_symbols)
-
-        # Add most frequent symbols
-        for symbol, _ in most_freq:
-            dic.add(symbol)
 
         return dic
