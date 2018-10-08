@@ -9,6 +9,8 @@ from collections import Iterable
 import numpy as np
 import dynet as dy
 
+from . import operations
+
 
 def _default_value(argument, default):
     """Returns ``default`` if ``argument`` is ``None``"""
@@ -19,9 +21,9 @@ def _default_value(argument, default):
 
 
 def list_to_matrix(l):
-    """Transforms a list of N vectors of dimension d into a (d, N) matrix"""
+    """Transforms a list of N vectors of dimension d into a (N, d) matrix"""
     if isinstance(l, list):
-        return dy.concatenate_cols(l)
+        return operations.stack(l, d=0)
     else:
         return l
 

@@ -9,7 +9,7 @@ from dynn import util
 from dynn.layers import pooling_layers
 
 
-class TestPool1DLayer(TestCase):
+class TestMaxPool1DLayer(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -54,6 +54,62 @@ class TestPool1DLayer(TestCase):
             pool1d = pooling_layers.MaxPooling1DLayer()
             self._test_forward_backward(
                 pool1d, kernel_size=kernel_size, stride=stride
+            )
+
+
+class TestMeanPool1DLayer(TestCase):
+
+    def setUp(self):
+        self.pc = dy.ParameterCollection()
+        self.N = 20
+        self.di = 10
+        self.bsz = 6
+        self.parameters_matrix = product(
+            [1],  # stride
+            [None],  # Kernel size
+            [None, [1, 2, 3, 4, 5, 6]]  # lengths
+        )
+
+    def _test_forward_backward(
+        self,
+        pool1d,
+        stride=1,
+        kernel_size=None,
+        lengths=None
+    ):
+        # Initialize computation graph
+        dy.renew_cg()
+        # Create inputs
+        x = dy.random_uniform((self.N, self.di), -1, 1, self.bsz)
+        # Initialize layer
+        pool1d.init(test=False, update=True)
+        # Run lstm cell
+        y = pool1d(x, stride=stride, kernel_size=kernel_size, lengths=lengths)
+        # Try forward/backward
+        z = dy.mean_batches(dy.sum_elems(y))
+        z.forward()
+        z.backward()
+        # Check dimensions
+        full_sequence_pooling = (kernel_size or pool1d.kernel_size) is None
+        kernel_size = kernel_size or pool1d.kernel_size or self.N
+        out_length = self.N - kernel_size + 1
+        out_length = int(np.ceil(out_length / stride))
+        if full_sequence_pooling:
+            expected_shape = (self.di,)
+        else:
+            expected_shape = (out_length, self.di)
+        self.assertTupleEqual(y.dim()[0], expected_shape)
+        self.assertEqual(y.dim()[1], self.bsz)
+
+    def test_forward_backward(self):
+        for stride, kernel_size, lengths in self.parameters_matrix:
+            print("Testing with arguments:")
+            print(f"- stride: {stride}")
+            print(f"- kernel_size: {kernel_size}")
+            print(f"- lengths: {lengths}")
+            pool1d = pooling_layers.MeanPooling1DLayer()
+            self._test_forward_backward(
+                pool1d, kernel_size=kernel_size, stride=stride, lengths=lengths
             )
 
 

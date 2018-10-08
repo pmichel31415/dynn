@@ -99,6 +99,72 @@ class MaxPooling1DLayer(BaseLayer):
         return output
 
 
+class MeanPooling1DLayer(BaseLayer):
+    """1D mean pooling.
+
+    The stride and kernel size arguments are here for consistency with
+    ``MaxPooling1D`` but they are **unsupported** for now.
+
+    Args:
+        kernel_size (int, optional): Default kernel size. If this is
+            not specified, the default is to pool over the full sequence
+            (default: ``None``)
+        stride (int, optional): Default temporal stride (default: ``1``)
+    """
+
+    def __init__(self, kernel_size=None, stride=1):
+        super(MeanPooling1DLayer, self).__init__("meanpool1d")
+        if kernel_size is not None or stride != 1:
+            raise NotImplementedError(
+                "MeanPooling1D doesn't support striding or kernel_size (yet)"
+            )
+        self.kernel_size = kernel_size
+        self.stride = stride
+
+    def __call__(self, x, kernel_size=None, stride=None, lengths=None):
+        """Mean pooling over the first dimension.
+
+        This takes either a list of ``N`` ``d``-dimensional vectors or
+        a ``N x d`` matrix.
+
+        The output will be a matrix of dimension
+        ``(N - kernel_size + 1) // stride x d``
+
+        Args:
+            x (:py:class:`dynet.Expression`): Input matrix or list of vectors
+            dim (int, optional): The reduction dimension (default: ``0``)
+            kernel_size (int, optional): Kernel size. If this is not
+                specified, the default size specified in the constructor
+                is used.
+            stride (int, optional): Temporal stride. If this is not specified,
+                the default stride specified in the constructor is used.
+
+        Returns:
+            :py:class:`dynet.Expression`: Pooled sequence.
+        """
+        # Convert to matrix if needed
+        x = util.list_to_matrix(x)
+        # x's dimension,x_dim = length x dimension
+        x_dim, _ = x.dim()
+        # If the kernel size is None, set it to the length of the sentence
+        kernel_size = util._default_value(kernel_size, self.kernel_size)
+        stride = stride or self.stride
+        if kernel_size is not None or stride != 1:
+            raise NotImplementedError(
+                "MeanPooling1D doesn't support striding or kernel_size (yet)"
+            )
+        kernel_size = kernel_size or x_dim[0]
+        # Mean pooling with appropriate kernel size
+        output = dy.mean_dim(x, d=[0], b=False)
+        # Rescale by lengths (for 0 masked stuff)
+        if lengths is not None:
+            lengths_mult = [x_dim[0] / length for length in lengths]
+            lengths_mult = dy.inputTensor(lengths_mult, batched=True)
+            output = dy.cmult(output, lengths_mult)
+        # Final output
+        return output
+
+
 class MaxPooling2DLayer(BaseLayer):
     """2D max pooling.
 

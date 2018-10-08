@@ -25,7 +25,7 @@ class TestUtil(TestCase):
             for _ in range(self.N)
         ])
         # Check dimension
-        self.assertTupleEqual(matrix.dim()[0], (self.d, self.N))
+        self.assertTupleEqual(matrix.dim()[0], (self.N, self.d))
         self.assertEqual(matrix.dim()[1], self.bsz)
         # Feeding a matrix shouldn't be a problem
         util.list_to_matrix(matrix)
