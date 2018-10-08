@@ -29,6 +29,13 @@ class RecurrentCell(object):
         """Initial value of the recurrent state. Should return a list."""
         raise NotImplementedError()
 
+    def get_output(self, state):
+        """Get the cell's output from the list of states.
+
+        For example this would return ``h`` from ``h,c`` in the case of the
+        LSTM"""
+        raise NotImplementedError()
+
 
 class ElmanRNN(ParametrizedLayer, RecurrentCell):
     """The standard Elman RNN cell:
@@ -66,14 +73,14 @@ class ElmanRNN(ParametrizedLayer, RecurrentCell):
         self.Whx_p = self.pc.add_parameters(
             (self.hidden_dim, self.input_dim),
             name='Whx',
-            init=NormalInit(scale_whx)
+            init=NormalInit(mean=0, std=scale_whx)
         )
         # Recurrent linear transform
         scale_whh = np.sqrt(1.0 / self.hidden_dim)
         self.Whh_p = self.pc.add_parameters(
             (self.hidden_dim, self.hidden_dim),
             name='Whh',
-            init=NormalInit(scale_whh)
+            init=NormalInit(mean=0, std=scale_whh)
         )
         # Bias
         self.b_p = self.pc.add_parameters(
@@ -128,6 +135,9 @@ class ElmanRNN(ParametrizedLayer, RecurrentCell):
         """
         return [dy.zeros(self.hidden_dim, batch_size=batch_size)]
 
+    def get_output(self, state):
+        return state[0]
+
 
 class LSTM(ParametrizedLayer, RecurrentCell):
     """Standard LSTM
@@ -162,14 +172,14 @@ class LSTM(ParametrizedLayer, RecurrentCell):
         self.Whx_p = self.pc.add_parameters(
             (self.hidden_dim * 4, self.input_dim),
             name="Whx",
-            init=NormalInit(scale_whx)
+            init=NormalInit(mean=0, std=scale_whx)
         )
         # Output to hidden
         scale_whh = np.sqrt(2.0 / (5 * self.hidden_dim))
         self.Whh_p = self.pc.add_parameters(
             (self.hidden_dim * 4, self.hidden_dim),
             name="Whh",
-            init=NormalInit(scale_whh)
+            init=NormalInit(mean=0, std=scale_whh)
         )
         # Bias
         self.b_p = self.pc.add_parameters(
@@ -235,3 +245,6 @@ class LSTM(ParametrizedLayer, RecurrentCell):
         """
         zero_vector = dy.zeros(self.hidden_dim, batch_size=batch_size)
         return zero_vector, zero_vector
+
+    def get_output(self, state):
+        return state[0]

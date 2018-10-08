@@ -10,7 +10,7 @@ independently, eg. :py:class:`FeedForwardTransductionLayer`) or recurrent
 :py:class:`UnidirectionalLayer`).
 """
 
-from ..util import _generate_mask, _should_mask, mask_batches
+from ..util import _generate_mask, _should_mask, mask_batches, _default_value
 from .base_layers import BaseLayer
 
 
@@ -159,11 +159,14 @@ class UnidirectionalLayer(BaseLayer):
     Args:
         cell (:py:class:`recurrent_layers.RecurrentCell`): The
             recurrent cell to use for transduction
+        output_only (bool, optional): Only return the sequence of outputs
+            instead of the sequence of states.
     """
 
-    def __init__(self, cell):
-
+    def __init__(self, cell, output_only=False):
+        super(UnidirectionalLayer, self).__init__("unidirectional")
         self.cell = cell
+        self.output_only = output_only
 
     def init(self, *args, **kwargs):
         """Passes its arguments to the recurrent layer"""
@@ -174,7 +177,8 @@ class UnidirectionalLayer(BaseLayer):
         input_sequence,
         backward=False,
         lengths=None,
-        left_padded=True
+        left_padded=True,
+        output_only=None,
     ):
         """Transduces the sequence using the recurrent cell.
 
@@ -198,15 +202,18 @@ class UnidirectionalLayer(BaseLayer):
                 lengths they must be padded to the length of longest sequence.
                 Use this to specify whether the sequence is left or right
                 padded.
+            output_only (bool, optional): Only return the sequence of outputs
+                instead of the sequence of states. Overwrites the value given
+                in the constructor.
 
         Returns:
             list: List of recurrent states (depends on the recurrent layer)
         """
         # Dimensions of the input sequence
         batch_size = input_sequence[0].dim()[1]
-        # Reverse the sequence for backward transduction
         max_length = len(input_sequence)
         min_length = max_length if lengths is None else min(lengths)
+        # Reverse the sequence for backward transduction
         if backward:
             input_sequence = reversed(input_sequence)
             # Padding is also reversed
@@ -231,9 +238,13 @@ class UnidirectionalLayer(BaseLayer):
                 state = mask_batches(state, mask, value=0)
             # Add the masked state to the output
             output_sequence.append(state)
-
+        # Reverse the sequence for backward transduction
         if backward:
             output_sequence = output_sequence[::-1]
+        # Only return outputs
+        if _default_value(output_only, self.output_only):
+            output_sequence = [self.cell.get_output(state)
+                               for state in output_sequence]
         return output_sequence
 
 
@@ -272,11 +283,17 @@ class BidirectionalLayer(BaseLayer):
             recurrent cell to use for forward transduction
         backward_cell (:py:class:`recurrent_layers.RecurrentCell`): The
             recurrent cell to use for backward transduction
+        output_only (bool, optional): Only return the sequence of outputs
+            instead of the sequence of states.
     """
 
-    def __init__(self, forward_cell, backward_cell):
-        self.forward_transductor = UnidirectionalLayer(forward_cell)
-        self.backward_transductor = UnidirectionalLayer(backward_cell)
+    def __init__(self, forward_cell, backward_cell, output_only=False):
+        super(BidirectionalLayer, self).__init__("bidirectional")
+        self.forward_transductor = UnidirectionalLayer(
+            forward_cell, output_only)
+        self.backward_transductor = UnidirectionalLayer(
+            backward_cell, output_only)
+        self.output_only = output_only
 
     def init(self, *args, **kwargs):
         """Passes its arguments to the recurrent layers"""
@@ -287,7 +304,8 @@ class BidirectionalLayer(BaseLayer):
         self,
         input_sequence,
         lengths=None,
-        left_padded=True
+        left_padded=True,
+        output_only=None,
     ):
         """Transduces the sequence in both directions
 
@@ -311,6 +329,9 @@ class BidirectionalLayer(BaseLayer):
                 lengths they must be padded to the length of longest sequence.
                 Use this to specify whether the sequence is left or right
                 padded.
+            output_only (bool, optional): Only return the sequence of outputs
+                instead of the sequence of states. Overwrites the value given
+                in the constructor.
 
         Returns:
             tuple: List of forward and backward recurrent states
@@ -322,13 +343,15 @@ class BidirectionalLayer(BaseLayer):
             input_sequence,
             lengths=lengths,
             backward=False,
-            left_padded=left_padded
+            left_padded=left_padded,
+            output_only=output_only,
         )
         # Backward transduction
         backward_states = self.backward_transductor(
             input_sequence,
             lengths=lengths,
             backward=True,
-            left_padded=left_padded
+            left_padded=left_padded,
+            output_only=output_only,
         )
         return forward_states, backward_states
