@@ -116,10 +116,10 @@ class SequenceMaskingLayer(BaseLayer):
         output_sequence = []
         for step, x in enumerate(input_sequence):
             # Perform masking if we need to
-            if _should_mask(step+1, min(lengths), max_length, left_padded):
+            if _should_mask(step, min(lengths), max_length, left_padded):
                 # Generate the max depending on the position, padding, etc...
                 mask = _generate_mask(
-                    step+1, max_length, batch_size, lengths, left_padded
+                    step, max_length, batch_size, lengths, left_padded
                 )
                 # Apply it
                 output_sequence.append(mask_batches(
@@ -235,16 +235,18 @@ class UnidirectionalLayer(BaseLayer):
             state = self.cell(x, *state)
             # Perform masking if we need to
             # TODO: masking -> interpolation with initial state
-            if do_masking(step+1):
+            if do_masking(step):
                 # Generate the max depending on the position, padding, etc...
                 mask = _generate_mask(
-                    step+1, max_length, batch_size, lengths, left_padded
+                    step, max_length, batch_size, lengths, left_padded
                 )
                 # Apply it
                 state = mask_batches(state, mask, value=0)
             # Add the masked state to the output
             output_sequence.append(state)
 
+        if backward:
+            output_sequence = reversed(output_sequence)
         return output_sequence
 
 

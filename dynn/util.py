@@ -71,7 +71,7 @@ def conditional_dropout(x, dropout_rate, flag):
 
 # Masking
 def apply_mask(x, m, val):
-    return dy.cmult(x, 1-m) + val
+    return dy.cmult(x, m) + val
 
 
 def _mask_batch(x, mask, value):
@@ -81,8 +81,9 @@ def _mask_batch(x, mask, value):
         mask_dim = tuple([1] * len(x.dim()[0]))
         batch_size = mask.dim()[1]
         reshaped_mask = dy.reshape(mask, mask_dim, batch_size=batch_size)
+        reshaped_value = dy.reshape(value, mask_dim, batch_size=batch_size)
         # Apply the mask
-        return apply_mask(x, reshaped_mask, value)
+        return apply_mask(x, reshaped_mask, reshaped_value)
     else:
         # Otherwise iterate
         output = []
@@ -107,10 +108,10 @@ def mask_batches(x, mask, value=0.0):
         raise ValueError("x must be a dynet.Expression or an Iterable")
     # Get the mask expression
     if not isinstance(mask, dy.Expression):
-        mask_vals = mask[:]
-        mask = dy.inputTensor(mask, batched=True)
-        mask_vals[mask_vals == 1] = value
-        mask_val = dy.inputTensor(mask_vals, batched=True)
+        mask_vals = mask[:].astype(float)
+        mask_vals[mask == 1] = value
+        mask = dy.inputTensor(1-mask, batched=True)
+        mask_vals = dy.inputTensor(mask_vals, batched=True)
     # Check that the mask has valid dimensions
     if any(dimension != 1 for dimension in mask.dim()[0]):
         raise ValueError(
@@ -118,7 +119,7 @@ def mask_batches(x, mask, value=0.0):
             f"the batch dimension, got {mask.dim()} instead."
         )
     # Actually do the masking
-    return _mask_batch(x, mask, mask_val)
+    return _mask_batch(x, mask, mask_vals)
 
 
 def _generate_mask(
@@ -136,7 +137,7 @@ def _generate_mask(
     # left/right padding
     if left_padded:
         # If the sequence is left padded
-        outside_sequence = (np.full(batch_size, step) >= lengths)
+        outside_sequence = (step_number >= lengths)
     else:
         # If the sequence is right padded
         outside_sequence = step_number < (max_length - lengths)
