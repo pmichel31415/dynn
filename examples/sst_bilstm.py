@@ -3,6 +3,7 @@
 from math import ceil
 import time
 
+import numpy as np
 import dynet as dy
 
 import dynn
@@ -58,7 +59,7 @@ test_x = dic.numberize(test_x)
 # Create the batch iterators
 print("Creating batch iterators")
 train_batches = PaddedSequenceBatchIterator(
-    train_x, train_y, dic, max_samples=32
+    train_x, train_y, dic, max_samples=32, group_by_length=True
 )
 dev_batches = PaddedSequenceBatchIterator(
     dev_x, dev_y, dic, max_samples=1, shuffle=False
@@ -73,7 +74,6 @@ test_batches = PaddedSequenceBatchIterator(
 # Hyper-parameters
 EMBED_DIM = 100
 HIDDEN_DIM = 512
-MAX_WIDTH = 4
 N_CLASSES = 2
 
 # Define the network as a custom layer
@@ -91,12 +91,12 @@ class BiLSTM(object):
         # BiLSTM
         self.bilstm = BidirectionalLayer(
             forward_cell=LSTM(self.pc, EMBED_DIM,
-                              HIDDEN_DIM//2, dropout_h=0.1),
+                              HIDDEN_DIM),
             backward_cell=LSTM(self.pc, EMBED_DIM,
-                               HIDDEN_DIM//2, dropout_h=0.1),
+                               HIDDEN_DIM),
         )
         # Masking for the pooling layer
-        self.masking = SequenceMaskingLayer(mask_value=-9999)
+        self.masking = SequenceMaskingLayer(mask_value=-np.inf)
         # Pool and predict
         self.pool_and_predict = StackedLayers(
             # Max pooling
@@ -117,10 +117,11 @@ class BiLSTM(object):
         w_embeds = self.embed(batch.sequences)
         # Run the bilstm
         fwd_states, bwd_states = self.bilstm(w_embeds, lengths=batch.lengths)
-        H = [dy.concatenate([fwd_h, bwd_h])
-             for (fwd_h, bwd_h), _ in zip(fwd_states, bwd_states)]
+        H = [0.5 * (fwd_h + bwd_h)
+             for (fwd_h, _), (bwd_h, _) in zip(fwd_states, bwd_states)]
         # Mask and stack to a matrix
         masked_H = stack(self.masking(H, lengths=batch.lengths), d=0)
+        print(masked_H.npvalue())
         # Maxpool and get the logits
         logits = self.pool_and_predict(masked_H)
         return logits
@@ -130,7 +131,7 @@ class BiLSTM(object):
 network = BiLSTM(EMBED_DIM, HIDDEN_DIM, N_CLASSES)
 
 # Optimizer
-trainer = dy.AdamTrainer(network.pc, alpha=0.001)
+trainer = dy.AdamTrainer(network.pc, alpha=0.01)
 
 
 # Training
