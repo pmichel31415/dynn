@@ -3,20 +3,19 @@
 from math import ceil
 import time
 
-import numpy as np
+# import numpy as np
 import dynet as dy
 
 import dynn
 from dynn.layers.dense_layers import DenseLayer
 from dynn.layers.embedding_layers import EmbeddingLayer
-from dynn.layers.pooling_layers import MaxPooling1DLayer
+from dynn.layers.pooling_layers import MeanPooling1DLayer
 from dynn.layers.recurrent_layers import LSTM
 from dynn.layers.transduction_layers import (
-    FeedForwardTransductionLayer, SequenceMaskingLayer, BidirectionalLayer
+    FeedForwardTransductionLayer, BidirectionalLayer
 )
-from dynn.layers.combination_layers import StackedLayers
 from dynn.activations import identity
-from dynn.operations import stack
+# from dynn.operations import stack
 
 from dynn.data import sst
 from dynn.data import preprocess
@@ -73,7 +72,7 @@ test_batches = PaddedSequenceBatchIterator(
 
 # Hyper-parameters
 EMBED_DIM = 100
-HIDDEN_DIM = 512
+HIDDEN_DIM = 256
 N_CLASSES = 2
 
 # Define the network as a custom layer
@@ -91,39 +90,34 @@ class BiLSTM(object):
         # BiLSTM
         self.bilstm = BidirectionalLayer(
             forward_cell=LSTM(self.pc, EMBED_DIM,
-                              HIDDEN_DIM),
+                              HIDDEN_DIM, dropout_h=0.1),
             backward_cell=LSTM(self.pc, EMBED_DIM,
-                               HIDDEN_DIM),
+                               HIDDEN_DIM, dropout_h=0.1),
+            output_only=True,
         )
-        # Masking for the pooling layer
-        self.masking = SequenceMaskingLayer(mask_value=-np.inf)
-        # Pool and predict
-        self.pool_and_predict = StackedLayers(
-            # Max pooling
-            MaxPooling1DLayer(),
-            # Softmax layer
-            DenseLayer(self.pc, HIDDEN_DIM, N_CLASSES,
-                       activation=identity, dropout=0.5),
+        # Pooling layer
+        self.mean_pool = MeanPooling1DLayer()
+        # Softmax layer
+        self.softmax = DenseLayer(
+            self.pc, HIDDEN_DIM, N_CLASSES, activation=identity, dropout=0.5
         )
 
     def init(self, test=False, update=True):
         self.embed.init(test=test, update=update)
         self.bilstm.init(test=test, update=update)
-        self.masking.init(test=test, update=update)
-        self.pool_and_predict.init(test=test, update=update)
+        self.mean_pool.init(test=test, update=update)
+        self.softmax.init(test=test, update=update)
 
     def __call__(self, batch):
         # Embed the f out of the inputs
         w_embeds = self.embed(batch.sequences)
         # Run the bilstm
-        fwd_states, bwd_states = self.bilstm(w_embeds, lengths=batch.lengths)
-        H = [0.5 * (fwd_h + bwd_h)
-             for (fwd_h, _), (bwd_h, _) in zip(fwd_states, bwd_states)]
+        fwd_H, bwd_H = self.bilstm(w_embeds, lengths=batch.lengths)
+        H = [0.5 * (fh + bh) for fh, bh in zip(fwd_H, bwd_H)]
         # Mask and stack to a matrix
-        masked_H = stack(self.masking(H, lengths=batch.lengths), d=0)
-        print(masked_H.npvalue())
+        pooled_H = self.mean_pool(H, lengths=batch.lengths)
         # Maxpool and get the logits
-        logits = self.pool_and_predict(masked_H)
+        logits = self.softmax(pooled_H)
         return logits
 
 
@@ -131,7 +125,7 @@ class BiLSTM(object):
 network = BiLSTM(EMBED_DIM, HIDDEN_DIM, N_CLASSES)
 
 # Optimizer
-trainer = dy.AdamTrainer(network.pc, alpha=0.01)
+trainer = dy.AdamTrainer(network.pc, alpha=0.001)
 
 
 # Training
