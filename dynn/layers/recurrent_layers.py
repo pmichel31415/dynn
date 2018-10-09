@@ -11,7 +11,7 @@ import numpy as np
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit, NormalInit
-from .. import activations
+from ..activations import sigmoid, tanh
 from .base_layers import ParametrizedLayer
 
 
@@ -57,7 +57,7 @@ class ElmanRNN(ParametrizedLayer, RecurrentCell):
         pc,
         input_dim,
         hidden_dim,
-        activation=activations.tanh,
+        activation=tanh,
         dropout=0.0
     ):
         super(ElmanRNN, self).__init__(pc, "elman-rnn")
@@ -222,19 +222,13 @@ class LSTM(ParametrizedLayer, RecurrentCell):
                 ``h`` and ``c``
         """
         if not self.test and (self.dropout_x > 0 or self.dropout_h > 0):
-            gates = dy.vanilla_lstm_gates_dropout(
-                x,
-                h,
-                self.Whx,
-                self.Whh,
-                self.b,
-                self.dropout_mask_x,
-                self.dropout_mask_h
-            )
-        else:
-            gates = dy.vanilla_lstm_gates(x, h, self.Whx, self.Whh, self.b)
-        new_c = dy.vanilla_lstm_c(c, gates)
-        new_h = dy.vanilla_lstm_h(new_c, gates)
+            x = dy.cmult(self.dropout_mask_x, x)
+            h = dy.cmult(self.dropout_mask_h, h)
+        gates = dy.affine_transform([self.b, self.Whx, x, self.Whh, h])
+        i, f, c_tilde, o = [gates[self.hidden_dim*i:self.hidden_dim*(i+1)]
+                            for i in range(4)]
+        new_c = dy.cmult(sigmoid(f+1), c) + dy.cmult(sigmoid(i), tanh(c_tilde))
+        new_h = dy.cmult(tanh(new_c), sigmoid(o))
         return [new_h, new_c]
 
     def initial_value(self, batch_size=1):
