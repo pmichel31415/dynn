@@ -89,7 +89,8 @@ class StackedRecurrentCells(BaseLayer, RecurrentCell):
 
     def initial_value(self, batch_size=1):
         """Initial value of the recurrent state."""
-        return [state for cell in self.cells for state in cell.initial_value()]
+        return [state for cell in self.cells
+                for state in cell.initial_value(batch_size=batch_size)]
 
     def get_output(self, state):
         """Get the output of the last cell"""
