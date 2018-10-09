@@ -11,11 +11,7 @@ import numpy as np
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit, NormalInit
-<<<<<<< HEAD
-from .. import activations
-=======
-from ..activations import sigmoid, tanh
->>>>>>> temporary
+from ..activations import tanh, sigmoid
 from .base_layers import BaseLayer, ParametrizedLayer
 
 
@@ -93,12 +89,7 @@ class StackedRecurrentCells(BaseLayer, RecurrentCell):
 
     def initial_value(self, batch_size=1):
         """Initial value of the recurrent state."""
-<<<<<<< HEAD
         return [state for cell in self.cells for state in cell.initial_value()]
-=======
-        return [state for cell in self.cells
-                for state in cell.initial_value(batch_size=batch_size)]
->>>>>>> temporary
 
     def get_output(self, state):
         """Get the output of the last cell"""
