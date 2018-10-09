@@ -12,7 +12,7 @@ import dynet as dy
 
 from ..parameter_initialization import ZeroInit, NormalInit
 from .. import activations
-from .base_layers import ParametrizedLayer
+from .base_layers import BaseLayer, ParametrizedLayer
 
 
 class RecurrentCell(object):
@@ -35,6 +35,103 @@ class RecurrentCell(object):
         For example this would return ``h`` from ``h,c`` in the case of the
         LSTM"""
         raise NotImplementedError()
+
+
+class StackedRecurrentCells(BaseLayer, RecurrentCell):
+    """This implements a stack of recurrent layers
+
+    The recurrent state of the resulting cell is the list of the states
+    of all the sub-cells. For example for a stack of 2 LSTM cells the
+    resulting state will be ``[h_1, c_1, h_2, c_2]``
+
+    Example:
+
+    .. code-block:: python
+
+        # Parameter collection
+        pc = dy.ParameterCollection()
+        # Stacked recurrent cell
+        stacked_cell = StackedRecurrentCells(
+            LSTM(pc, 10, 15),
+            LSTM(pc, 15, 5),
+            ElmanRNN(pc, 5, 20),
+        )
+        # Inputs
+        dy.renew_cg()
+        x = dy.random_uniform(10, batch_size=5)
+        # Initialize layer
+        stacked_cell.init(test=False)
+        # Initial state: [h_1, c_1, h_2, c_2, h_3] of sizes [15, 15, 5, 5, 20]
+        init_state = stacked_cell.initial_value()
+        # Run the cell on the input.
+        new_state = stacked_cell(x, *init_state)
+        # Get the final output (h_3 of size 20)
+        h = stacked_cell.get_output(new_state)
+        """
+
+    def __init__(self, *cells):
+        super(StackedRecurrentCells, self).__init__("stacked-recurrent")
+        for cell in cells:
+            if not isinstance(cell, RecurrentCell):
+                raise ValueError(
+                    f"Expected RecurrentCell, got {cell.__class__} in "
+                    "StackedRecurrentCells constructor."
+                )
+        self.cells = cells
+        self.state_sizes = [len(cell.initial_value()) for cell in self.cells]
+
+        # This is used to get the states for a specific layer
+        cum_state_size = np.cumsum([0] + self.state_sizes)
+        self.state_slices = [
+            slice(start, stop, None)
+            for start, stop in zip(cum_state_size[:-1], cum_state_size[1:])
+        ]
+
+    def initial_value(self, batch_size=1):
+        """Initial value of the recurrent state."""
+        return [state for cell in self.cells for state in cell.initial_value()]
+
+    def get_output(self, state):
+        """Get the output of the last cell"""
+        last_cell_state = state[self.state_slices[-1]]
+        return self.cells[-1].get_output(last_cell_state)
+
+    def init(self, test=False, update=True):
+        """Initialize the layer before performing computation
+
+        Args:
+            test (bool, optional): If test mode is set to ``True``,
+                dropout is not applied (default: ``True``)
+            update (bool, optional): Whether to update the parameters
+                (default: ``True``)
+        """
+        for cell in self.cells:
+            cell.init(test=test, update=update)
+
+    def __call__(self, x, *state):
+        """Compute the cell's output from the list of states and an input expression
+
+        Args:
+            x (:py:class:`dynet.Expression`): Input vector
+
+        Returns:
+            list: new recurrent state
+        """
+
+        # New state
+        new_state = []
+        # Iterate over the cells
+        for n_cell, cell in enumerate(self.cells):
+            # Retrieve the previous state for this layer
+            cell_state = state[self.state_slices[n_cell]]
+            # Run the cell and get the new state
+            new_cell_state = cell(x, *cell_state)
+            # Retrieve the output value to feedback as input to the next layer
+            x = cell.get_output(state)
+            # Add the cell state to the new state
+            new_state.extend(new_cell_state)
+
+        return new_state
 
 
 class ElmanRNN(ParametrizedLayer, RecurrentCell):
