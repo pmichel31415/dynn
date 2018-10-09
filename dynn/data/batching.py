@@ -410,3 +410,139 @@ class PaddedSequenceBatchIterator(object):
         self.position += 1
         # Return batch
         return self[indices]
+
+
+class BPTTBatchIterator(object):
+    """Wraps a list of sequences as a contiguous batch iterator.
+
+    This will iterate over batches of contiguous subsequences of size
+    ``seq_length``. TODO: elaborate
+
+    Example:
+
+    .. code-block:: python
+
+        # Dictionary
+        # Sequence of length 1000
+        data = np.random.randint(10, size=1000)
+        # Iterator with over subsequences of length 20 with batch size 5
+        batched_dataset = BPTTBatchIterator(data, batch_size=5, seq_length=20)
+        # Training loop
+        for x, y in batched_dataset:
+            # x has and y have shape (seq_length, batch_size)
+            # y[i+1] == x[i]
+            # Do something with x
+
+    Args:
+        data (list): List of numpy arrays containing the data
+        targets (list): List of targets
+        batch_size (int, optional): Batch size
+        seq_length (int, optional): BPTT length
+    """
+
+    def __init__(
+        self,
+        data,
+        batch_size=32,
+        seq_length=30,
+    ):
+        # Get one list
+        if isinstance(data[0], list):
+            data = [word for sent in data for word in sent]
+        self.num_samples = len(data)
+        # The data is stored as an array
+        self.data = np.asarray(data, dtype=type(data[0]))
+        # Parameters
+        self.batch_size = batch_size
+        self.seq_length = seq_length
+        # Reset position and shuffle the order if applicable
+        self.reset()
+
+    def __len__(self):
+        """This returns the number of **batches** in the dataset
+        (not the total number of samples)
+
+        Returns:
+            int: Number of batches in the dataset
+                ``ceil(len(data)/batch_size)``
+        """
+        return self.num_batches
+
+    def __getitem__(self, index):
+        """Returns the ``index`` th sample
+
+        The result is a tuple ``x, next_x`` of numpy arrays of shape
+        ``seq_len x batch_size`` ``seq_length`` is determined by the range
+        specified by ``index``, and ``next_x[t]=x[t+1]`` for all ``t``
+
+        Args:
+            index (int, slice): Index or slice
+
+        Returns:
+            tuple: ``x, next_x``
+        """
+        if isinstance(index, int):
+            return self[index:index + 1]
+        elif isinstance(index, slice):
+            start = index.start or self.start_position
+            stop = index.stop or self.num_positions
+            batch_elems = []
+            for b in range(self.batch_size):
+                start_idx = start + b * self.num_positions
+                stop_idx = stop + b * self.num_positions
+                new_slice = slice(start_idx, stop_idx, index.step)
+                batch_elems.append(self.data[new_slice])
+            # concatenate to batch (batch dimension at the end as always)
+            batch = np.stack(batch_elems, axis=-1)
+            return batch
+        else:
+            raise ValueError(
+                "BPTTBatchIterator.__getitem__ expects a slice or an int"
+            )
+
+    def percentage_done(self):
+        """What percent of the data has been covered in the current epoch"""
+        return 100 * (self.position / self.num_positions)
+
+    def just_passed_multiple(self, batch_number):
+        """Checks whether the current number of batches processed has
+        just passed a multiple of ``batch_number``.
+
+        For example you can use this to report at regular interval
+        (eg. every 10 batches)
+
+        Args:
+            batch_number (int): [description]
+
+        Returns:
+            bool: ``True`` if :math:`\\fraccurrent_batch`
+        """
+        relative_position = self.position - self.start_position
+        return (relative_position // self.seq_length) % batch_number == 0
+
+    def reset(self):
+        """Reset the iterator and shuffle the dataset if applicable"""
+        # This is the total number of batched positions
+        self.num_positions = self.num_samples // self.batch_size
+        # This is the number of batches
+        self.num_batches = int(np.ceil(self.num_positions / self.seq_length))
+        # This is the # of remaining words after iterating over all positions
+        pad_size = self.num_samples % self.batch_size
+        self.start_position = np.random.randint(low=0, high=pad_size+1)
+        self.position = self.start_position
+
+    def __iter__(self):
+        self.reset()
+        return self
+
+    def __next__(self):
+        # Check for end of epoch
+        if self.position >= self.num_positions-1:
+            raise StopIteration
+        # Batch index
+        seq_len = min(self.seq_length, self.num_positions-1-self.position)
+        batch = self[self.position:self.position+seq_len+1]
+        # Increment position
+        self.position += seq_len
+        # Return batch
+        return batch[:-1], batch[1:]

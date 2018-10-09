@@ -210,5 +210,49 @@ class TestPaddedSequenceBatchIterator(TestCase):
         batched_dataset[::-1]
 
 
+class TestBPTTBatchIterator(TestCase):
+
+    def setUp(self):
+        self.dic = dictionary.Dictionary(symbols="abcdefg".split())
+        self.batch_size = 3
+        self.seq_length = 20
+        self.data_size = self.seq_length * self.batch_size + 1
+        self.data = np.random.randint(
+            low=self.dic.nspecials, high=len(self.dic), size=self.data_size
+        )
+
+    def _dummy_classification_iterator(self):
+        # Iterator
+        return batching.BPTTBatchIterator(
+            self.data,
+            batch_size=self.batch_size,
+            seq_length=self.seq_length,
+        )
+
+    def test_classification(self):
+        batched_dataset = self._dummy_classification_iterator()
+        # Try iterating
+        for x, y in batched_dataset:
+            # Check dimensions
+            self.assertTupleEqual(x.shape, y.shape)
+            self.assertLessEqual(x.shape[0], self.seq_length)
+            self.assertEqual(x.shape[1], self.batch_size)
+            # Check values
+            self.assertTrue(np.allclose(x[:-1], x[1:]))
+
+    def test_length(self):
+        batched_dataset = self._dummy_classification_iterator()
+        num_batches = len([x for x in batched_dataset])
+        self.assertEqual(num_batches, len(batched_dataset))
+
+    def test_getitem(self):
+        batched_dataset = self._dummy_classification_iterator()
+        batched_dataset[0]
+        batched_dataset[1:3]
+        batched_dataset[1:10:2]
+        batched_dataset[10:1:-2]
+        batched_dataset[::-1]
+
+
 if __name__ == '__main__':
     unittest.main()
