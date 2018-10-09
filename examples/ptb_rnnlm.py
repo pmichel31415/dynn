@@ -44,25 +44,19 @@ train = dic.numberize(train)
 valid = dic.numberize(valid)
 test = dic.numberize(test)
 
-# Create the batch iterators
-print("Creating batch iterators")
-train_batches = BPTTBatchIterator(
-    train, batch_size=32, seq_length=30
-)
-valid_batches = BPTTBatchIterator(
-    valid, batch_size=1, seq_length=30
-)
-test_batches = BPTTBatchIterator(
-    test, batch_size=1, seq_length=30
-)
-
 # Model
 # =====
 
 # Hyper-parameters
-EMBED_DIM = 32
-HIDDEN_DIM = 32
+LEARNING_RATE = 20
+LEARNING_RATE_DECAY = 4.0
+CLIP_NORM = 0.25
+BPTT_LENGTH = 35
+BATCH_SIZE = 20
+EMBED_DIM = 200
+HIDDEN_DIM = 200
 VOC_SIZE = len(dic)
+DROPOUT = 0.2
 
 # Define the network as a custom layer
 
@@ -73,20 +67,26 @@ class RNNLM(object):
         # Master parameter collection
         self.pc = dy.ParameterCollection()
         # Word embeddings
-        self.embed = FeedForwardTransductionLayer(
-            EmbeddingLayer(self.pc, dic, embed_dim, pad_mask=0.0)
-        )
+        embed_layer = EmbeddingLayer(self.pc, dic, embed_dim)
+        self.embed = FeedForwardTransductionLayer(embed_layer)
         # RNNLM
-        self.rnn = UnidirectionalLayer(
-            LSTM(self.pc, embed_dim, hidden_dim,
-                 dropout_h=0.5, dropout_x=0.5)
+        recurrent_cell = LSTM(
+            self.pc,
+            embed_dim,
+            hidden_dim,
+            dropout_x=DROPOUT,
+            dropout_h=DROPOUT
         )
+        self.rnn = UnidirectionalLayer(recurrent_cell)
         # Final projection layer
-        self.project = FeedForwardTransductionLayer(
-            DenseLayer(
-                self.pc, hidden_dim, voc_size, activation=identity, dropout=0.5
-            )
+        proj_layer = DenseLayer(
+            self.pc,
+            hidden_dim,
+            voc_size,
+            activation=identity,
+            dropout=DROPOUT
         )
+        self.project = FeedForwardTransductionLayer(proj_layer)
 
     def init(self, test=False, update=True):
         self.embed.init(test=test, update=update)
@@ -98,7 +98,8 @@ class RNNLM(object):
         w_embeds = self.embed(input_sequence)
         # Initialize hidden state
         if initial_state is not None:
-            initial_state = dy.inputTensor(initial_state, batched=True)
+            batched = w_embeds[0].dim()[1] > 1
+            initial_state = [dy.inputTensor(s, batched=batched) for s in initial_state]
         # Run the bilstm
         states = self.rnn(w_embeds, initial_state=initial_state)
         # Retrieve the network outputs
@@ -115,17 +116,31 @@ class RNNLM(object):
 network = RNNLM(EMBED_DIM, HIDDEN_DIM, VOC_SIZE)
 
 # Optimizer
-trainer = dy.AdamTrainer(network.pc, alpha=0.001)
+trainer = dy.SimpleSGDTrainer(network.pc, learning_rate=LEARNING_RATE)
+trainer.set_clip_threshold(CLIP_NORM)
 
 
 # Training
 # ========
 
+# Create the batch iterators
+print("Creating batch iterators")
+train_batches = BPTTBatchIterator(
+    train, batch_size=BATCH_SIZE, seq_length=BPTT_LENGTH
+)
+valid_batches = BPTTBatchIterator(
+    valid, batch_size=1, seq_length=200
+)
+test_batches = BPTTBatchIterator(
+    test, batch_size=1, seq_length=200
+)
+
+
 # Start training
 print("Starting training")
 best_ppl = np.inf
 # Start training
-for epoch in range(10):
+for epoch in range(100):
     # Time the epoch
     start_time = time.time()
     # This state will be passed around for truncated BPTT
@@ -136,7 +151,7 @@ for epoch in range(10):
         # Initialize layers
         network.init(test=False, update=True)
         # Compute logits
-        logits, state_val = network(x, initial_state=None)
+        logits, state_val = network(x, initial_state=state_val)
         # Loss at each step
         nlls = [dy.pickneglogsoftmax_batch(logit, y)
                 for logit, y in zip(logits, targets)]
@@ -150,23 +165,23 @@ for epoch in range(10):
         if train_batches.just_passed_multiple(ceil(len(train_batches)/10)):
             print(
                 f"Epoch {epoch+1}@{train_batches.percentage_done():.0f}%: "
-                f"NLL={nll.value():.3f}"
+                f"NLL={nll.value():.3f} PPL={np.exp(nll.value()):.2f}"
             )
     # End of epoch logging
-    print(f"Epoch {epoch+1}@100%: NLL={nll.value():.3f}")
+    print(f"Epoch {epoch+1}@100%: NLL={nll.value():.3f} PPL={np.exp(nll.value()):.2f}")
     print(f"Took {time.time()-start_time:.1f}s")
     print("=" * 20)
     # Validate
     nll = 0
     # This state will be passed around for truncated BPTT
     state_val = None
-    for x, y in valid_batches:
+    for x, targets in valid_batches:
         # Renew the computation graph
         dy.renew_cg()
         # Initialize layers
         network.init(test=True, update=False)
         # Compute logits
-        logits, state_val = network(x, initial_state=None)
+        logits, state_val = network(x, initial_state=state_val)
         # Loss at each step
         nlls = [dy.pickneglogsoftmax_batch(logit, y)
                 for logit, y in zip(logits, targets)]
@@ -175,35 +190,36 @@ for epoch in range(10):
     # Average NLL
     nll /= valid_batches.num_samples
     # Perplexity
-    ppl = np.exp(-nll)
+    ppl = np.exp(nll)
     # Print final result
-    print(f"Valid ppl: {ppl:.2f}%")
+    print(f"Valid ppl: {ppl:.2f}")
     # Early stopping
     if ppl < best_ppl:
         best_ppl = ppl
         network.pc.save("ptb_rnnlm.model")
     else:
-        print(f"Early stopping with best ppl {best_ppl:.2f}%")
-        break
+        print("Decreasing learning rate")
+        trainer.learning_rate /= LEARNING_RATE_DECAY
+        print(f"New learning rate: {trainer.learning_rate}")
 
 # Testing
 # =======
 
 # Load model
 print("Reloading best model")
-network.pc.populate("sst_bilstm.model")
+network.pc.populate("ptb_rnnlm.model")
 
 # Test
 nll = 0
 # This state will be passed around for truncated BPTT
 state_val = None
-for x, y in test_batches:
+for x, targets in test_batches:
     # Renew the computation graph
     dy.renew_cg()
     # Initialize layers
     network.init(test=True, update=False)
     # Compute logits
-    logits, state_val = network(x, initial_state=None)
+    logits, state_val = network(x, initial_state=state_val)
     # Loss at each step
     nlls = [dy.pickneglogsoftmax_batch(logit, y)
             for logit, y in zip(logits, targets)]
@@ -212,6 +228,6 @@ for x, y in test_batches:
 # Average NLL
 nll /= test_batches.num_samples
 # Perplexity
-ppl = np.exp(-nll)
+ppl = np.exp(nll)
 # Print final result
-print(f"Test ppl: {ppl:.2f}%")
+print(f"Test ppl: {ppl:.2f}")
