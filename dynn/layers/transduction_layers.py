@@ -179,6 +179,7 @@ class UnidirectionalLayer(BaseLayer):
         lengths=None,
         left_padded=True,
         output_only=None,
+        initial_state=None,
     ):
         """Transduces the sequence using the recurrent cell.
 
@@ -205,6 +206,8 @@ class UnidirectionalLayer(BaseLayer):
             output_only (bool, optional): Only return the sequence of outputs
                 instead of the sequence of states. Overwrites the value given
                 in the constructor.
+            initial_state (:py:class:`dy.Expression`, optional): Overridies the
+                default initial state of the recurrent cell
 
         Returns:
             list: List of recurrent states (depends on the recurrent layer)
@@ -219,7 +222,10 @@ class UnidirectionalLayer(BaseLayer):
             # Padding is also reversed
             left_padded = not left_padded
         # Initial recurrent state provided by the recurrent cell
-        state = self.cell.initial_value(batch_size=batch_size)
+        if initial_state is None:
+            state = self.cell.initial_value(batch_size=batch_size)
+        else:
+            state = initial_state
         # Start transducing
         output_sequence = []
         for step, x in enumerate(input_sequence):
@@ -306,6 +312,8 @@ class BidirectionalLayer(BaseLayer):
         lengths=None,
         left_padded=True,
         output_only=None,
+        fwd_initial_state=None,
+        bwd_initial_state=None,
     ):
         """Transduces the sequence in both directions
 
@@ -332,6 +340,10 @@ class BidirectionalLayer(BaseLayer):
             output_only (bool, optional): Only return the sequence of outputs
                 instead of the sequence of states. Overwrites the value given
                 in the constructor.
+            fwd_initial_state (:py:class:`dy.Expression`, optional): Overridies
+                the default initial state of the forward recurrent cell.
+            bwd_initial_state (:py:class:`dy.Expression`, optional): Overridies
+                the default initial state of the backward recurrent cell.
 
         Returns:
             tuple: List of forward and backward recurrent states
@@ -345,6 +357,7 @@ class BidirectionalLayer(BaseLayer):
             backward=False,
             left_padded=left_padded,
             output_only=output_only,
+            initial_state=fwd_initial_state,
         )
         # Backward transduction
         backward_states = self.backward_transductor(
@@ -353,5 +366,6 @@ class BidirectionalLayer(BaseLayer):
             backward=True,
             left_padded=left_padded,
             output_only=output_only,
+            initial_state=bwd_initial_state,
         )
         return forward_states, backward_states
