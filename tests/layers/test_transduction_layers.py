@@ -90,6 +90,10 @@ class TestSequenceMaskingLayer(TestCase):
         z = dy.mean_batches(dy.sum_elems(dy.esum(outputs)))
         z.forward()
         z.backward(full=True)
+        # Check dimensions
+        for x, state in zip(seq, outputs):
+            for s in state:
+                self.assertEqual(x.dim()[1], s.dim()[1])
         # Check value
         for idx, length in enumerate(self.lengths):
             for step in range(len(seq)-length):
@@ -203,6 +207,37 @@ class TestUnidirectionalLayer(TestCase):
                 left_padded
             )
 
+    def test_stacked_lstm_rnn(self):
+        # Create lstm layer
+        cells = [
+            recurrent_layers.LSTM(
+                self.pc,
+                self.di,
+                self.dh-1,
+                dropout_x=self.dropout,
+                dropout_h=self.dropout,
+            ),
+            recurrent_layers.ElmanRNN(
+                self.pc,
+                self.dh-1,
+                self.dh,
+                dropout=self.dropout,
+            ),
+        ]
+        stacked_cell = recurrent_layers.StackedRecurrentCells(*cells)
+        for lengths, backward, left_padded in self.parameters_matrix:
+            print(f"Testing with:")
+            print(f"- lengths=: {lengths}")
+            print(f"- backward=: {backward}")
+            print(f"- left_padded=: {left_padded}")
+            self._test_recurrent_layer_unidirectional_transduction(
+                stacked_cell,
+                np.random.rand(self.di, self.bz),
+                lengths,
+                backward,
+                left_padded
+            )
+
 
 class TestBidirectionalLayer(TestCase):
 
@@ -250,6 +285,13 @@ class TestBidirectionalLayer(TestCase):
         z = fwd_z + bwd_z
         z.forward()
         z.backward()
+        # Check dimensions
+        for x, state in zip(seq, fwd_states):
+            for s in state:
+                self.assertEqual(x.dim()[1], s.dim()[1])
+        for x, state in zip(seq, bwd_states):
+            for s in state:
+                self.assertEqual(x.dim()[1], s.dim()[1])
         # check masking
         if lengths is not None:
             for idx, length in enumerate(lengths):

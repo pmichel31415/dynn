@@ -449,12 +449,21 @@ class BPTTBatchIterator(object):
         # Get one list
         if isinstance(data[0], list):
             data = [word for sent in data for word in sent]
-        self.num_samples = len(data)
-        # The data is stored as an array
-        self.data = np.asarray(data, dtype=type(data[0]))
         # Parameters
+        self.num_samples = len(data)
+        self.num_positions = self.num_samples//batch_size
+        self.num_batches = int(np.ceil(self.num_positions / seq_length))
         self.batch_size = batch_size
         self.seq_length = seq_length
+        # The data is stored as an array of shape (-1, batch_size)
+        self.data = np.stack([
+            np.asarray(
+                data[b*self.num_positions:(b+1)*self.num_positions],
+                dtype=type(data[0])
+            )
+            for b in range(self.batch_size)],
+            axis=-1
+        )
         # Reset position and shuffle the order if applicable
         self.reset()
 
@@ -481,24 +490,7 @@ class BPTTBatchIterator(object):
         Returns:
             tuple: ``x, next_x``
         """
-        if isinstance(index, int):
-            return self[index:index + 1]
-        elif isinstance(index, slice):
-            start = index.start or self.start_position
-            stop = index.stop or self.num_positions
-            batch_elems = []
-            for b in range(self.batch_size):
-                start_idx = start + b * self.num_positions
-                stop_idx = stop + b * self.num_positions
-                new_slice = slice(start_idx, stop_idx, index.step)
-                batch_elems.append(self.data[new_slice])
-            # concatenate to batch (batch dimension at the end as always)
-            batch = np.stack(batch_elems, axis=-1)
-            return batch
-        else:
-            raise ValueError(
-                "BPTTBatchIterator.__getitem__ expects a slice or an int"
-            )
+        return self.data[index]
 
     def percentage_done(self):
         """What percent of the data has been covered in the current epoch"""
@@ -517,19 +509,11 @@ class BPTTBatchIterator(object):
         Returns:
             bool: ``True`` if :math:`\\fraccurrent_batch`
         """
-        relative_position = self.position - self.start_position
-        return (relative_position // self.seq_length) % batch_number == 0
+        return (self.position // self.seq_length) % batch_number == 0
 
     def reset(self):
         """Reset the iterator and shuffle the dataset if applicable"""
-        # This is the total number of batched positions
-        self.num_positions = self.num_samples // self.batch_size
-        # This is the number of batches
-        self.num_batches = int(np.ceil(self.num_positions / self.seq_length))
-        # This is the # of remaining words after iterating over all positions
-        pad_size = self.num_samples % self.batch_size
-        self.start_position = np.random.randint(low=0, high=pad_size+1)
-        self.position = self.start_position
+        self.position = 0
 
     def __iter__(self):
         self.reset()
