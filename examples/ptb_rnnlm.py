@@ -9,7 +9,7 @@ import dynet as dy
 import dynn
 from dynn.layers.dense_layers import DenseLayer
 from dynn.layers.embedding_layers import EmbeddingLayer
-from dynn.layers.recurrent_layers import LSTM
+from dynn.layers.recurrent_layers import LSTM, StackedRecurrentCells
 from dynn.layers.transduction_layers import (
     FeedForwardTransductionLayer, UnidirectionalLayer
 )
@@ -53,6 +53,7 @@ LEARNING_RATE_DECAY = 4.0
 CLIP_NORM = 0.25
 BPTT_LENGTH = 35
 BATCH_SIZE = 20
+N_LAYERS = 2
 EMBED_DIM = 200
 HIDDEN_DIM = 200
 VOC_SIZE = len(dic)
@@ -63,21 +64,19 @@ DROPOUT = 0.2
 
 class RNNLM(object):
 
-    def __init__(self, embed_dim, hidden_dim, voc_size):
+    def __init__(self, n_layers, embed_dim, hidden_dim, voc_size):
         # Master parameter collection
         self.pc = dy.ParameterCollection()
         # Word embeddings
         embed_layer = EmbeddingLayer(self.pc, dic, embed_dim)
         self.embed = FeedForwardTransductionLayer(embed_layer)
         # RNNLM
-        recurrent_cell = LSTM(
-            self.pc,
-            embed_dim,
-            hidden_dim,
-            dropout_x=DROPOUT,
-            dropout_h=DROPOUT
-        )
-        self.rnn = UnidirectionalLayer(recurrent_cell)
+        dims = [embed_dim] + [hidden_dim] * n_layers
+        recurrent_cells = [
+            LSTM(self.pc, di, dh, dropout_x=DROPOUT, dropout_h=DROPOUT)
+            for di, dh in zip(dims[:-1], dims[1:])
+        ]
+        self.rnn = UnidirectionalLayer(StackedRecurrentCells(*recurrent_cells))
         # Final projection layer
         proj_layer = DenseLayer(
             self.pc,
@@ -99,7 +98,8 @@ class RNNLM(object):
         # Initialize hidden state
         if initial_state is not None:
             batched = w_embeds[0].dim()[1] > 1
-            initial_state = [dy.inputTensor(s, batched=batched) for s in initial_state]
+            initial_state = [dy.inputTensor(s, batched=batched)
+                             for s in initial_state]
         # Run the bilstm
         states = self.rnn(w_embeds, initial_state=initial_state)
         # Retrieve the network outputs
@@ -107,13 +107,13 @@ class RNNLM(object):
         # Get the logits
         logits = self.project(hs)
         # Retrieve last state value
-        last_state = [h.npvalue() for h in states[-1]]
+        last_state = [s.npvalue() for s in states[-1]]
         # Return logits and last state
         return logits, last_state
 
 
 # Instantiate the network
-network = RNNLM(EMBED_DIM, HIDDEN_DIM, VOC_SIZE)
+network = RNNLM(N_LAYERS, EMBED_DIM, HIDDEN_DIM, VOC_SIZE)
 
 # Optimizer
 trainer = dy.SimpleSGDTrainer(network.pc, learning_rate=LEARNING_RATE)
@@ -165,10 +165,11 @@ for epoch in range(100):
         if train_batches.just_passed_multiple(ceil(len(train_batches)/10)):
             print(
                 f"Epoch {epoch+1}@{train_batches.percentage_done():.0f}%: "
-                f"NLL={nll.value():.3f} PPL={np.exp(nll.value()):.2f}"
+                f"NLL={nll.value():.3f} ppl={np.exp(nll.value()):.2f}"
             )
     # End of epoch logging
-    print(f"Epoch {epoch+1}@100%: NLL={nll.value():.3f} PPL={np.exp(nll.value()):.2f}")
+    print(f"Epoch {epoch+1}@100%: "
+          f"NLL={nll.value():.3f} ppl={np.exp(nll.value()):.2f}")
     print(f"Took {time.time()-start_time:.1f}s")
     print("=" * 20)
     # Validate
