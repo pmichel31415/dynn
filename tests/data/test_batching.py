@@ -254,5 +254,117 @@ class TestBPTTBatchIterator(TestCase):
         batched_dataset[::-1]
 
 
+class TestSequencePairsBatchIterator(TestCase):
+
+    def setUp(self):
+        self.src_dic = dictionary.Dictionary(symbols="abcdefg".split())
+        self.tgt_dic = dictionary.Dictionary(symbols="hijklmn".split())
+        self.max_samples = 6
+        self.max_tokens = 40
+        self.data_size = self.max_tokens//2 + 1
+        self.src_data = [
+            np.random.randint(low=self.src_dic.nspecials,
+                              high=len(self.src_dic), size=i)
+            for i in range(1, self.data_size + 1)
+        ]
+        self.tgt_data = [
+            np.random.randint(low=self.tgt_dic.nspecials,
+                              high=len(self.tgt_dic), size=i)
+            for i in range(1, self.data_size + 1)
+        ]
+
+    def _dummy_iterator(
+        self,
+        shuffle=True,
+        group_by_length=None,
+    ):
+        # Iterator
+        return batching.SequencePairsBatchIterator(
+            self.src_data,
+            self.tgt_data,
+            self.src_dic,
+            self.tgt_dic,
+            max_samples=self.max_samples,
+            max_tokens=self.max_tokens,
+            shuffle=shuffle,
+            group_by_length=group_by_length,
+        )
+
+    def test_not_grouped(self):
+        batched_dataset = self._dummy_iterator()
+        # Try iterating
+        for x, y in batched_dataset:
+            # check dimensions
+            self.assertEqual(x.sequences.shape[0], max(x.lengths))
+            self.assertLessEqual(x.sequences.shape[1], self.max_samples)
+            self.assertLessEqual(
+                len([w for seq in x.sequences for w in seq
+                     if w != batched_dataset.src_pad_idx]) +
+                len([w for seq in y.sequences for w in seq
+                     if w != batched_dataset.tgt_pad_idx]),
+                self.max_tokens
+            )
+            self.assertEqual(x.sequences.shape[1], y.sequences.shape[1])
+
+    def test_grouped(self):
+        for grouped_by in ["source", "target"]:
+            batched_dataset = self._dummy_iterator(group_by_length=grouped_by)
+            # Try iterating
+            for x, y in batched_dataset:
+                # check dimensions
+                self.assertEqual(x.sequences.shape[0], max(x.lengths))
+                self.assertLessEqual(x.sequences.shape[1], self.max_samples)
+                self.assertLessEqual(
+                    len([w for seq in x.sequences for w in seq
+                         if w != batched_dataset.src_pad_idx]) +
+                    len([w for seq in y.sequences for w in seq
+                         if w != batched_dataset.tgt_pad_idx]),
+                    self.max_tokens
+                )
+                self.assertEqual(x.sequences.shape[1], y.sequences.shape[1])
+
+    def test_shuffle(self):
+        batched_dataset = self._dummy_iterator(shuffle=True)
+        # Record the source sequences for the first 2 epochs
+        first_epoch_srcs = np.concatenate(
+            [src.sequences.flatten()
+             for src, _ in batched_dataset]
+        )
+        second_epoch_srcs = np.concatenate(
+            [src.sequences.flatten()
+             for src, _ in batched_dataset]
+        )
+        # Check that the sequences are not all equals (the probability that
+        # this happens by chance and the test fails is very low)
+        self.assertFalse(np.allclose(first_epoch_srcs, second_epoch_srcs))
+
+    def test_no_shuffle(self):
+        batched_dataset = self._dummy_iterator(shuffle=False)
+        # Record the source sequences for the first 2 epochs
+        first_epoch_srcs = np.concatenate(
+            [src.sequences.flatten()
+             for src, _ in batched_dataset]
+        )
+        second_epoch_srcs = np.concatenate(
+            [src.sequences.flatten()
+             for src, _ in batched_dataset]
+        )
+        # Check that the data is equal
+        self.assertTrue(np.allclose(first_epoch_srcs, second_epoch_srcs))
+
+    def test_length(self):
+        batched_dataset = self._dummy_iterator()
+        num_batches = len([x for x in batched_dataset])
+        self.assertEqual(num_batches, len(batched_dataset))
+
+    def test_getitem(self):
+        batched_dataset = self._dummy_iterator()
+        batched_dataset[0]
+        batched_dataset[1:3]
+        batched_dataset[1:10:2]
+        batched_dataset[10:1:-2]
+        batched_dataset[::-1]
+
+
 if __name__ == '__main__':
     unittest.main()
