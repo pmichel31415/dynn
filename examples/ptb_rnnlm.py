@@ -31,7 +31,7 @@ ptb.download_ptb(".")
 
 # Load the data
 print("Loading the PTB data")
-train, valid, test = ptb.load_ptb(".")
+train, valid, test = ptb.load_ptb(".", eos="<eos>")
 
 # Learn the dictionary
 print("Building the dictionary")
@@ -68,7 +68,13 @@ class RNNLM(object):
         # Master parameter collection
         self.pc = dy.ParameterCollection()
         # Word embeddings
-        embed_layer = EmbeddingLayer(self.pc, dic, embed_dim)
+        embeddings = self.pc.add_parameters(
+            (voc_size, embed_dim),
+            init="uniform",
+            scale=0.1
+        )
+        # Embedding layer
+        embed_layer = EmbeddingLayer(self.pc, dic, embed_dim, params=embeddings)
         self.embed = FeedForwardTransductionLayer(embed_layer)
         # RNNLM
         dims = [embed_dim] + [hidden_dim] * n_layers
@@ -83,7 +89,8 @@ class RNNLM(object):
             hidden_dim,
             voc_size,
             activation=identity,
-            dropout=DROPOUT
+            dropout=DROPOUT,
+            W_p=embeddings,
         )
         self.project = FeedForwardTransductionLayer(proj_layer)
 
@@ -134,13 +141,14 @@ valid_batches = BPTTBatchIterator(
 test_batches = BPTTBatchIterator(
     test, batch_size=1, seq_length=200
 )
+print(f"{len(train_batches)} training batches")
 
 
 # Start training
 print("Starting training")
 best_ppl = np.inf
 # Start training
-for epoch in range(100):
+for epoch in range(40):
     # Time the epoch
     start_time = time.time()
     # This state will be passed around for truncated BPTT
