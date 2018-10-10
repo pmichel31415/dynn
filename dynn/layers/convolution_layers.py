@@ -95,7 +95,7 @@ class Conv1DLayer(ParametrizedLayer):
             :py:class:`dynet.Expression`: Convolved sequence.
         """
         # Dropout
-        x = util.conditional_dropout(x, self.dropout_rate, self.test)
+        x = util.conditional_dropout(x, self.dropout_rate, not self.test)
         # Reshape the ``length x input_dim`` matrix to an
         # "image" of shape ``length x 1 x input_dim`` to use dynet's conv2d
         img = operations.unsqueeze(x, 1)
@@ -212,7 +212,7 @@ class Conv2DLayer(ParametrizedLayer):
             :py:class:`dynet.Expression`: Convolved image.
         """
         # Dropout
-        x = util.conditional_dropout(x, self.dropout_rate, self.test)
+        x = util.conditional_dropout(x, self.dropout_rate, not self.test)
         # Retrieve convolution arguments
         is_valid = not (
             self.zero_padded if zero_padded is None else zero_padded

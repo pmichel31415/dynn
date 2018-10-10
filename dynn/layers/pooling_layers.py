@@ -4,9 +4,6 @@ Pooling layers
 ==============
 """
 
-
-from __future__ import print_function, division
-
 import dynet as dy
 from .. import util, operations
 from .base_layers import BaseLayer

@@ -6,6 +6,7 @@ Densely connected layers
 import dynet as dy
 
 from ..parameter_initialization import ZeroInit
+from ..util import conditional_dropout
 from .base_layers import ParametrizedLayer
 
 
@@ -70,16 +71,15 @@ class DenseLayer(ParametrizedLayer):
             :py:class:`dynet.Expression`: :math:`y=f(Wx+b)`
         """
         # Dropout
-        if not self.test and self.dropout > 0:
-            x = dy.dropout(x, self.dropout)
+        x = conditional_dropout(x, self.dropout, not self.test)
         # Output
         if self.nobias:
             self.h = self.W * x
         else:
-            self.h = self.activation(dy.affine_transform([self.b, self.W, x]))
+            self.h = dy.affine_transform([self.b, self.W, x])
 
         # Final output
-        return self.h
+        return self.activation(self.h)
 
 
 class GatedLayer(ParametrizedLayer):
