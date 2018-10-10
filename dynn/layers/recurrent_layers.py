@@ -89,7 +89,8 @@ class StackedRecurrentCells(BaseLayer, RecurrentCell):
 
     def initial_value(self, batch_size=1):
         """Initial value of the recurrent state."""
-        return [state for cell in self.cells for state in cell.initial_value()]
+        return [state for cell in self.cells
+                for state in cell.initial_value(batch_size)]
 
     def get_output(self, state):
         """Get the output of the last cell"""
@@ -127,7 +128,7 @@ class StackedRecurrentCells(BaseLayer, RecurrentCell):
             # Run the cell and get the new state
             new_cell_state = cell(x, *cell_state)
             # Retrieve the output value to feedback as input to the next layer
-            x = cell.get_output(state)
+            x = cell.get_output(new_cell_state)
             # Add the cell state to the new state
             new_state.extend(new_cell_state)
 
@@ -322,10 +323,14 @@ class LSTM(ParametrizedLayer, RecurrentCell):
             x = dy.cmult(self.dropout_mask_x, x)
             h = dy.cmult(self.dropout_mask_h, h)
         gates = dy.affine_transform([self.b, self.Whx, x, self.Whh, h])
-        i, f, c_tilde, o = [gates[self.hidden_dim*i:self.hidden_dim*(i+1)]
-                            for i in range(4)]
-        new_c = dy.cmult(sigmoid(f+1), c) + dy.cmult(sigmoid(i), tanh(c_tilde))
-        new_h = dy.cmult(tanh(new_c), sigmoid(o))
+        # Split gates and apply nonlinearities
+        i = sigmoid(gates[:self.hidden_dim])
+        f = sigmoid(gates[self.hidden_dim:2*self.hidden_dim] + 1)
+        o = sigmoid(gates[2*self.hidden_dim:3*self.hidden_dim])
+        g = tanh(gates[3*self.hidden_dim:])
+        # New cell state
+        new_c = dy.cmult(f, c) + dy.cmult(i, g)
+        new_h = dy.cmult(tanh(new_c), o)
         return [new_h, new_c]
 
     def initial_value(self, batch_size=1):
