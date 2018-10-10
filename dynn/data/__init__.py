@@ -10,6 +10,7 @@ Supported datasets are:
 - `MNIST <http://yann.lecun.com/exdb/mnist/>`_
 - `CIFAR-10 <https://www.cs.toronto.edu/~kriz/cifar.html>`_
 - `SST <https://nlp.stanford.edu/sentiment/index.html>`_
+- `PTB <http://www.fit.vutbr.cz/~imikolov/rnnlm>`_
 """
 from . import (
     batching,
@@ -17,6 +18,7 @@ from . import (
     mnist,
     cifar10,
     sst,
+    ptb,
     dictionary,
     trees,
 )
@@ -27,6 +29,7 @@ __all__ = [
     "mnist",
     "cifar10",
     "sst",
+    "ptb",
     "dictionary",
     "trees",
 ]
