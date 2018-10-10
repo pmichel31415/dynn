@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
+
 import unittest
 from unittest import TestCase
+
 import dynet as dy
+
 from dynn.layers import dense_layers
 
 
