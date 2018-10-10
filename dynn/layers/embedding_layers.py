@@ -54,7 +54,8 @@ class EmbeddingLayer(ParametrizedLayer):
         dictionary,
         embed_dim,
         initialization=None,
-        pad_mask=None
+        pad_mask=None,
+        params=None,
     ):
         super(EmbeddingLayer, self).__init__(pc, "embedding")
         # Check input
@@ -76,11 +77,12 @@ class EmbeddingLayer(ParametrizedLayer):
         else:
             param_dim = (self.size, embed_dim)
         # Create lookup parameter
-        self.params = self.pc.add_lookup_parameters(
+        self.params = params or self.pc.add_lookup_parameters(
             param_dim,
             init=initialization,
             name="params"
         )
+        self.is_lookup = isinstance(self.params, dy.LookupParameters)
         # Default update parameter
         self.update = True
 
@@ -93,9 +95,17 @@ class EmbeddingLayer(ParametrizedLayer):
             update (bool, optional): Whether to update the parameters
                 (default: ``True``)
         """
+        if not self.is_lookup:
+            self.params_e = self.params.expr(update)
         self.test = test
         self.update = update
 
+    def _lookup(self, idx):
+        if self.is_lookup:
+            return dy.lookup_batch(self.params, idx, update=self.update)
+        else:
+            return dy.pick_batch(self.params_e, idx)
+        
     def __call__(self, idxs):
         """Returns the input's embedding
 
@@ -115,11 +125,10 @@ class EmbeddingLayer(ParametrizedLayer):
         idxs = np.asarray(idxs, dtype=int)
         if len(idxs.shape) == 1:
             # List of indices
-            embeds = dy.lookup_batch(self.params, idxs, update=self.update)
+            embeds = self._lookup(idxs)
         elif len(idxs.shape) == 2:
             # Matrix of indices
-            vecs = [dy.lookup_batch(self.params, idx, update=self.update)
-                    for idx in idxs]
+            vecs = [self._lookup(idx) for idx in idxs]
             embeds = dy.concatenate([unsqueeze(vec, d=0) for vec in vecs], d=0)
         else:
             raise ValueError(

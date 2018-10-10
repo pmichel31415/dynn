@@ -33,11 +33,13 @@ class DenseLayer(ParametrizedLayer):
         activation=dy.tanh,
         dropout=0.0,
         nobias=False,
+        W_p=None,
+        b_p=None,
     ):
         super(DenseLayer, self).__init__(pc, "dense")
-        self.W_p = self.pc.add_parameters((output_dim, input_dim), name="W")
+        self.W_p = W_p or self.pc.add_parameters((output_dim, input_dim), name="W")
         if not nobias:
-            self.b_p = self.pc.add_parameters(
+            self.b_p = b_p or self.pc.add_parameters(
                 output_dim, name="b", init=ZeroInit())
 
         self.dropout = dropout
