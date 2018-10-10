@@ -18,18 +18,18 @@ class BatchedSequence(object):
     Args:
         sequences (list): List of list of integers
         pad_idx (int): Default index for padding
-        left_padded (bool, optional): Pad to the left (all sequences end at
-            the same position).
+        left_aligned (bool, optional): Align to the left (all sequences start
+            at the same position).
     """
 
-    def __init__(self, sequences, pad_idx, left_padded=False):
+    def __init__(self, sequences, pad_idx, left_aligned=True):
         if len(sequences) == 0:
             raise ValueError("Can't batch 0 sequences together")
         if not isinstance(sequences[0], Iterable):
             sequences = [sequences]
         self.lengths = [len(seq) for seq in sequences]
         self.pad_idx = pad_idx
-        self.left_padded = False
+        self.left_aligned = left_aligned
         self.sequences = self.collate(sequences)
 
     def collate(self, sequences):
@@ -49,10 +49,10 @@ class BatchedSequence(object):
         )
         # Fill the indices values
         for batch_idx, sequence in enumerate(sequences):
-            if self.left_padded:
-                batch_array[-self.lengths[batch_idx]:, batch_idx] = sequence
-            else:
+            if self.left_aligned:
                 batch_array[:self.lengths[batch_idx], batch_idx] = sequence
+            else:
+                batch_array[-self.lengths[batch_idx]:, batch_idx] = sequence
         return batch_array
 
 
@@ -79,7 +79,7 @@ class PaddedSequenceBatchIterator(object):
         )
         # Training loop
         for x, y in batched_dataset:
-            # x has variable shape (length, batch_size)
+            # x is a BatchedSequence object
             # and y has shape (batch_size,)
             # Do something with x and y
 
@@ -95,8 +95,7 @@ class PaddedSequenceBatchIterator(object):
         group_by_length (bool, optional): Group sequences by length. This
             minimizes the number of padding tokens. The batches are not
             strictly IID though.
-        left_padded (bool, optional): Pad the sequences to the left
-            (right-aligned batches)
+        left_aligned (bool, optional): Align the sequences to the left
     """
 
     def __init__(
@@ -108,7 +107,7 @@ class PaddedSequenceBatchIterator(object):
         max_tokens=np.inf,
         shuffle=True,
         group_by_length=True,
-        left_padded=False,
+        left_aligned=True,
     ):
         if len(data) != len(targets):
             raise ValueError(
@@ -128,7 +127,7 @@ class PaddedSequenceBatchIterator(object):
         self.max_tokens = max_tokens
         self.shuffle = shuffle
         self.group_by_length = group_by_length
-        self.left_padded = left_padded
+        self.left_aligned = left_aligned
         self.pad_idx = dictionary.pad_idx
         # Initial position and order
         self.position = 0
@@ -165,7 +164,7 @@ class PaddedSequenceBatchIterator(object):
         batch_data = BatchedSequence(
             self.data[index],
             pad_idx=self.pad_idx,
-            left_padded=self.left_padded,
+            left_aligned=self.left_aligned,
         )
         batch_targets = self.targets[..., index]
         return batch_data, batch_targets
