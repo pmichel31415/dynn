@@ -28,7 +28,7 @@ def download_ptb(path=".", force=False):
     download_if_not_there(ptb_file, ptb_url, path, force=force)
 
 
-def read_ptb(split, path):
+def read_ptb(split, path, eos=None):
     """Iterates over the PTB dataset
 
     Example:
@@ -42,6 +42,8 @@ def read_ptb(split, path):
         split (str): Either ``"train"``, ``"dev"`` or ``"test"``
         path (str): Path to the folder containing the
             ``trainDevTestTrees_PTB.zip`` files
+        eos (str, optional): Optionally append an end of sentence token to
+            each line
 
 
     Returns:
@@ -56,10 +58,12 @@ def read_ptb(split, path):
         file_obj = tar.extractfile(filename)
         for line in file_obj:
             sent = line.decode("utf-8").strip().split()
+            if eos is not None:
+                sent.append(eos)
             yield sent
 
 
-def load_ptb(path, terminals_only=True, binary=False):
+def load_ptb(path, eos=None):
     """Loads the PTB dataset
 
     Returns the train and test set, each as a list of images and a list
@@ -69,6 +73,9 @@ def load_ptb(path, terminals_only=True, binary=False):
     Args:
         path (str): Path to the folder containing the
             ``trainDevTestTrees_PTB.zip`` file
+        eos (str, optional): Optionally append an end of sentence token to
+            each line
+
 
     Returns:
         tuple: train, valid and test sets (tuple of tree/labels tuples)
@@ -76,7 +83,7 @@ def load_ptb(path, terminals_only=True, binary=False):
     splits = []
     # TODO: binary labels
     for split in ["train", "valid", "test"]:
-        data = list(read_ptb(split, path))
+        data = list(read_ptb(split, path, eos=eos))
         splits.append(data)
 
     return tuple(splits)

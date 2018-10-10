@@ -451,6 +451,7 @@ class BPTTBatchIterator(object):
             data = [word for sent in data for word in sent]
         # Parameters
         self.num_samples = len(data)
+        self.num_samples -= self.num_samples % batch_size
         self.num_positions = self.num_samples//batch_size
         self.num_batches = int(np.ceil(self.num_positions / seq_length))
         self.batch_size = batch_size
