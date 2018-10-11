@@ -114,6 +114,36 @@ class Dictionary(object):
         else:
             return [self.numberize(item) for item in data]
 
+    def string(self, idxs, with_pad=False, with_eos=False, join_with=None):
+        """Converts a list of indices to strings
+
+        Depending on whether ``join_with`` is specified this either returns a
+        string or a list of strings.
+
+        Args:
+            idxs (list): List of ints
+            with_pad (bool, optional): Defaults to False. Include padding
+                tokens
+            with_eos (bool, optional): Defaults to False. Include EOS tokens
+            join_with (str, optional): Defaults to None. Join the list into one
+            string with this specific character
+
+        Returns:
+            str, list: Either a string or list of strings if ``join_with`` is
+                ``None``
+        """
+        # Filter out special tokens
+        idxs = [idx for idx in idxs
+                if (idx != self.pad_idx or with_pad)
+                and (idx != self.eos_idx or with_eos)]
+        # Back to words
+        words = [self[idx] for idx in idxs]
+        # Join
+        if join_with is not None:
+            words = join_with.join(words)
+
+        return words
+
     @staticmethod
     def from_data(
         data,

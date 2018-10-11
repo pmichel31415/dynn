@@ -24,6 +24,18 @@ class TestDictionary(TestCase):
         }
         self.assertSetEqual(set(dic.symbols), expected_symbols)
 
+    def test_numberize(self):
+        dic = dictionary.Dictionary.from_data(self.data)
+        numberized_data = dic.numberize(self.data[0])
+        numberized_data.append(dic.pad_idx)
+        # Stringify without padding
+        string = dic.string(numberized_data, join_with=" ")
+        self.assertEqual(string, " ".join(self.data[0]))
+        # Stringify with padding
+        string = dic.string(numberized_data, with_pad=True, join_with=" ")
+        padded_data = self.data[0] + [dic[dic.pad_idx]]
+        self.assertEqual(string, " ".join(padded_data))
+
 
 if __name__ == '__main__':
     unittest.main()
