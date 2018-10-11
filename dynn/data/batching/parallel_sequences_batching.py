@@ -195,6 +195,7 @@ class SequencePairsBatchIterator(object):
                 # Add current batch and start a new one
                 batches.append(current_batch)
                 current_batch = []
+                n_tokens = n_samples = 0
             # Add the sample to the current batch
             current_batch.append(idx)
             n_samples += 1
