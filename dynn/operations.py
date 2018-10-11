@@ -151,16 +151,13 @@ def seq_mask(size, lengths, base_val=1, mask_val=0, left_aligned=True):
     Returns:
         ::py:class:`dynet.Expression`: Mask expression
     """
-
-    lengths = np.asarray(lengths)
-    bsz = len(lengths)
-    indices = np.stack([np.full(bsz, i) for i in range(size)], axis=0)
-    # Which indices should be masked
-    if left_aligned:
-        should_mask = (indices >= lengths).astype(float)
-    else:
-        should_mask = (indices < (size - lengths)).astype(float)
-    # Actual mask value
-    mask_val = (1 - should_mask) * base_val + should_mask * mask_val
+    indices = np.arange(size)
+    mask = np.full((size, len(lengths)), base_val).astype(float)
+    for b, length in enumerate(lengths):
+        if left_aligned:
+            should_mask = (indices >= length)
+        else:
+            should_mask = (indices < (size - length))
+        mask[should_mask, b] = mask_val
     # Return an expression
-    return dy.inputTensor(mask_val, batched=True)
+    return dy.inputTensor(mask, batched=True)

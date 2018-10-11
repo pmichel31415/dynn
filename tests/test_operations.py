@@ -85,6 +85,17 @@ class TestOperations(TestCase):
                 slices[dim] = i
                 self.assertTrue(np.allclose(x_val, y_val[tuple(slices)]))
 
+    def test_seq_mask(self):
+        # Check exact value
+        mask = operations.seq_mask(4, [1, 2, 4])
+        expected_mask = [[1, 1, 1],
+                         [0, 1, 1],
+                         [0, 0, 1],
+                         [0, 0, 1]]
+        self.assertTrue(np.allclose(mask.npvalue(), np.asarray(expected_mask)))
+        # Make sure it works with float values
+        operations.seq_mask(4, [1, 2, 4], 3.1415, -np.inf)
+
 
 if __name__ == '__main__':
     unittest.main()
