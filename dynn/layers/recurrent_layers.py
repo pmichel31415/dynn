@@ -371,7 +371,7 @@ class StackedLSTM(StackedRecurrentCells):
         # Create recurrent cells
         dims = [input_dim] + [hidden_dim]*num_layers
         lstm_cells = [
-            LSTM(self.pc, di, dh, dropout_x=dropout_x, dropout_h=dropout_h)
+            LSTM(pc, di, dh, dropout_x=dropout_x, dropout_h=dropout_h)
             for di, dh in zip(dims[:-1], dims[1:])
         ]
         # Initialize
