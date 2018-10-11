@@ -10,7 +10,7 @@ from dynn import util
 from dynn.layers import convolution_layers
 
 
-class TestConv1DLayer(TestCase):
+class TestConv1D(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -65,7 +65,7 @@ class TestConv1DLayer(TestCase):
             print(f"- stride: {stride}")
             print(f"- zero_padded: {zero_padded}")
             print(f"- nobias: {nobias}")
-            conv1d = convolution_layers.Conv1DLayer(
+            conv1d = convolution_layers.Conv1D(
                 self.pc,
                 self.di,
                 self.nk,
@@ -80,7 +80,7 @@ class TestConv1DLayer(TestCase):
             )
 
 
-class TestConv2DLayer(TestCase):
+class TestConv2D(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -147,7 +147,7 @@ class TestConv2DLayer(TestCase):
             print(f"- strides: {strides}")
             print(f"- zero_padded: {zero_padded}")
             print(f"- nobias: {nobias}")
-            conv2d = convolution_layers.Conv2DLayer(
+            conv2d = convolution_layers.Conv2D(
                 self.pc,
                 self.di,
                 self.nk,

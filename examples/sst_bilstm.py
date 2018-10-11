@@ -6,15 +6,13 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import DenseLayer
-from dynn.layers.embedding_layers import EmbeddingLayer
+from dynn.layers.dense_layers import Affine
+from dynn.layers.embedding_layers import Embeddings
 from dynn.layers.pooling_layers import MeanPooling1DLayer
 from dynn.layers.recurrent_layers import LSTM
 from dynn.layers.transduction_layers import (
-    FeedForwardTransductionLayer, BidirectionalLayer
+    Transduction, Bidirectional
 )
-from dynn.activations import identity
-# from dynn.operations import stack
 
 from dynn.data import sst
 from dynn.data import preprocess
@@ -73,33 +71,30 @@ test_batches = PaddedSequenceBatchIterator(
 EMBED_DIM = 100
 HIDDEN_DIM = 512
 N_CLASSES = 2
+DROPOUT = 0.5
 
 # Define the network as a custom layer
 
 
 class BiLSTM(object):
 
-    def __init__(self, embed_dim, hidden_dim, num_classes):
+    def __init__(self, dx, dh):
         # Master parameter collection
         self.pc = dy.ParameterCollection()
         # Word embeddings
-        self.embed = FeedForwardTransductionLayer(
-            EmbeddingLayer(self.pc, dic, EMBED_DIM, pad_mask=0.0)
+        self.embed = Transduction(
+            Embeddings(self.pc, dic, dx, pad_mask=0.0)
         )
         # BiLSTM
-        self.bilstm = BidirectionalLayer(
-            forward_cell=LSTM(self.pc, EMBED_DIM,
-                              HIDDEN_DIM, dropout_h=0.5, dropout_x=0.5),
-            backward_cell=LSTM(self.pc, EMBED_DIM,
-                               HIDDEN_DIM, dropout_h=0.5, dropout_x=0.5),
+        self.bilstm = Bidirectional(
+            forward_cell=LSTM(self.pc, dx, dh, DROPOUT, DROPOUT),
+            backward_cell=LSTM(self.pc, dx, dh, DROPOUT, DROPOUT),
             output_only=True,
         )
         # Pooling layer
         self.mean_pool = MeanPooling1DLayer()
         # Softmax layer
-        self.softmax = DenseLayer(
-            self.pc, HIDDEN_DIM, N_CLASSES, activation=identity, dropout=0.5
-        )
+        self.softmax = Affine(self.pc, dh, N_CLASSES, dropout=DROPOUT)
 
     def init(self, test=False, update=True):
         self.embed.init(test=test, update=update)
@@ -121,7 +116,7 @@ class BiLSTM(object):
 
 
 # Instantiate the network
-network = BiLSTM(EMBED_DIM, HIDDEN_DIM, N_CLASSES)
+network = BiLSTM(EMBED_DIM, HIDDEN_DIM)
 
 # Optimizer
 trainer = dy.AdamTrainer(network.pc, alpha=0.001)

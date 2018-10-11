@@ -6,12 +6,12 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import DenseLayer
-from dynn.layers.convolution_layers import Conv2DLayer
-from dynn.layers.pooling_layers import MaxPooling2DLayer
+from dynn.layers.dense_layers import Affine
+from dynn.layers.convolution_layers import Conv2D
+from dynn.layers.pooling_layers import MaxPool2D
 from dynn.layers.flow_layers import FlattenLayer
-from dynn.layers.combination_layers import StackedLayers, ConcatenatedLayers
-from dynn import activations
+from dynn.layers.combination_layers import Sequential, Parallel
+from dynn.activations import relu
 
 from dynn.data import mnist
 from dynn.data import preprocess
@@ -27,22 +27,22 @@ dynn.set_random_seed(31415)
 pc = dy.ParameterCollection()
 
 # Network
-network = StackedLayers(
+network = Sequential(
     # First conv + maxpool layer
-    ConcatenatedLayers(
-        Conv2DLayer(pc, 1, 16, [5, 5], activation=activations.relu),
-        Conv2DLayer(pc, 1, 16, [3, 3], activation=activations.relu),
+    Parallel(
+        Conv2D(pc, 1, 16, [5, 5], activation=relu),
+        Conv2D(pc, 1, 16, [3, 3], activation=relu),
         dim=-1,
     ),
-    MaxPooling2DLayer(default_kernel_size=[2, 2], default_strides=[2, 2]),
+    MaxPool2D(default_kernel_size=[2, 2], default_strides=[2, 2]),
     # Second conv + maxpool layer
-    Conv2DLayer(pc, 32, 64, [5, 5], activation=activations.relu),
-    MaxPooling2DLayer(default_kernel_size=[2, 2], default_strides=[2, 2]),
+    Conv2D(pc, 32, 64, [5, 5], activation=relu),
+    MaxPool2D(default_kernel_size=[2, 2], default_strides=[2, 2]),
     # Flatten the resulting 3d tensor
     FlattenLayer(),
     # Final Multilayer perceptron
-    DenseLayer(pc, 64*(28//4)**2, 128, activation=activations.relu),
-    DenseLayer(pc, 128, 10, activation=activations.identity, dropout=0.1)
+    Affine(pc, 64*(28//4)**2, 128, activation=relu),
+    Affine(pc, 128, 10, dropout=0.1)
 )
 
 # Optimizer

@@ -8,7 +8,7 @@ import dynet as dy
 from dynn.layers import dense_layers
 
 
-class TestDenseLayer(TestCase):
+class TestAffine(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -18,7 +18,7 @@ class TestDenseLayer(TestCase):
 
     def test_forward_backward(self):
         # Create compact lstm
-        dense = dense_layers.DenseLayer(
+        dense = dense_layers.Affine(
             self.pc, self.di, self.do, dropout=self.dropout
         )
         # Initialize computation graph

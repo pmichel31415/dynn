@@ -5,12 +5,13 @@ Densely connected layers
 """
 import dynet as dy
 
+from ..activations import identity
 from ..parameter_initialization import ZeroInit
 from ..util import conditional_dropout
 from .base_layers import ParametrizedLayer
 
 
-class DenseLayer(ParametrizedLayer):
+class Affine(ParametrizedLayer):
     """Densely connected layer
 
     :math:`y=f(Wx+b)`
@@ -21,7 +22,7 @@ class DenseLayer(ParametrizedLayer):
         input_dim (int): Input dimension
         output_dim (int): Output dimension
         activation (function, optional): activation function
-            (default: :py:class:`dynet.tanh`)
+            (default: :py:function:`identity`)
         dropout (float, optional):  Dropout rate (default 0)
         nobias (bool, optional): Omit the bias (default ``False``)
     """
@@ -31,14 +32,15 @@ class DenseLayer(ParametrizedLayer):
         pc,
         input_dim,
         output_dim,
-        activation=dy.tanh,
+        activation=identity,
         dropout=0.0,
         nobias=False,
         W_p=None,
         b_p=None,
     ):
-        super(DenseLayer, self).__init__(pc, "dense")
-        self.W_p = W_p or self.pc.add_parameters((output_dim, input_dim), name="W")
+        super(Affine, self).__init__(pc, "affine")
+        self.W_p = W_p or self.pc.add_parameters(
+            (output_dim, input_dim), name="W")
         if not nobias:
             self.b_p = b_p or self.pc.add_parameters(
                 output_dim, name="b", init=ZeroInit())

@@ -11,7 +11,7 @@ from dynn.layers import dense_layers, convolution_layers, combination_layers
 dy.reset_random_seed(31415)
 
 
-class TestStackedLayers(TestCase):
+class TestSequential(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -23,11 +23,11 @@ class TestStackedLayers(TestCase):
         # Create the list of dense layers
         for n_layers in self.n_layers_range:
             layers = [
-                dense_layers.DenseLayer(self.pc, self.dims[i], self.dims[i+1])
+                dense_layers.Affine(self.pc, self.dims[i], self.dims[i+1])
                 for i in range(n_layers)
             ]
             # Stack the layers
-            network = combination_layers.StackedLayers(*layers)
+            network = combination_layers.Sequential(*layers)
             # Run once for sanity check
             dy.renew_cg()
             # Dummy input
@@ -46,18 +46,18 @@ class TestStackedLayers(TestCase):
             self.assertEqual(y.dim()[1], self.bsz)
 
     def test_empty_list(self):
-        self.assertRaises(ValueError, combination_layers.StackedLayers)
+        self.assertRaises(ValueError, combination_layers.Sequential)
 
     def test_nonlayer(self):
         self.assertRaises(
             ValueError,
-            combination_layers.StackedLayers,
-            dense_layers.DenseLayer(self.pc, 1, 1), "Oops",
-            dense_layers.DenseLayer(self.pc, 1, 1)
+            combination_layers.Sequential,
+            dense_layers.Affine(self.pc, 1, 1), "Oops",
+            dense_layers.Affine(self.pc, 1, 1)
         )
 
 
-class TestConcatenatedLayers(TestCase):
+class TestParallel(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -73,11 +73,11 @@ class TestConcatenatedLayers(TestCase):
         # Create the list of dense layers
         for n_layers in self.n_layers_range:
             layers = [
-                convolution_layers.Conv2DLayer(self.pc, self.di, self.nk, ksz)
+                convolution_layers.Conv2D(self.pc, self.di, self.nk, ksz)
                 for ksz in self.ksizes[:n_layers]
             ]
             # Concatenate the layers
-            network = combination_layers.ConcatenatedLayers(*layers, dim=-1)
+            network = combination_layers.Parallel(*layers, dim=-1)
             # Try both with and without insert dim
             for insert_dim in [False, True]:
                 # Run once for sanity check
@@ -107,14 +107,14 @@ class TestConcatenatedLayers(TestCase):
                 self.assertEqual(y.dim()[1], self.bsz)
 
     def test_empty_list(self):
-        self.assertRaises(ValueError, combination_layers.ConcatenatedLayers)
+        self.assertRaises(ValueError, combination_layers.Parallel)
 
     def test_nonlayer(self):
         self.assertRaises(
             ValueError,
-            combination_layers.ConcatenatedLayers,
-            dense_layers.DenseLayer(self.pc, 1, 1), "Oops",
-            dense_layers.DenseLayer(self.pc, 1, 1)
+            combination_layers.Parallel,
+            dense_layers.Affine(self.pc, 1, 1), "Oops",
+            dense_layers.Affine(self.pc, 1, 1)
         )
 
 

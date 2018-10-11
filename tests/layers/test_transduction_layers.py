@@ -9,7 +9,7 @@ import dynet as dy
 from dynn.layers import dense_layers, recurrent_layers, transduction_layers
 
 
-class TestFeedForwardTransductionLayer(TestCase):
+class TestTransduction(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -19,9 +19,9 @@ class TestFeedForwardTransductionLayer(TestCase):
 
     def test_feedforward_layer_transduction(self):
         # Simple dense layer
-        dense = dense_layers.DenseLayer(self.pc, self.di, self.do)
+        dense = dense_layers.Affine(self.pc, self.di, self.do)
         # Create transduction layer
-        tranductor = transduction_layers.FeedForwardTransductionLayer(dense)
+        tranductor = transduction_layers.Transduction(dense)
         # Initialize computation graph
         dy.renew_cg()
         # Create inputs
@@ -109,7 +109,7 @@ class TestSequenceMaskingLayer(TestCase):
                 self.assertAlmostEquals(np.abs(grad).sum(), 0, 10)
 
 
-class TestUnidirectionalLayer(TestCase):
+class TestUnidirectional(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -132,7 +132,7 @@ class TestUnidirectionalLayer(TestCase):
         left_padded,
     ):
         # Create transduction layer
-        tranductor = transduction_layers.UnidirectionalLayer(layer)
+        tranductor = transduction_layers.Unidirectional(layer)
         # Initialize computation graph
         dy.renew_cg()
         # Create inputs
@@ -239,7 +239,7 @@ class TestUnidirectionalLayer(TestCase):
             )
 
 
-class TestBidirectionalLayer(TestCase):
+class TestBidirectional(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -261,7 +261,7 @@ class TestBidirectionalLayer(TestCase):
         left_padded,
     ):
         # Create transduction layer
-        tranductor = transduction_layers.BidirectionalLayer(
+        tranductor = transduction_layers.Bidirectional(
             fwd_layer, bwd_layer)
         # Initialize computation graph
         dy.renew_cg()

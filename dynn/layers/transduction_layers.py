@@ -5,16 +5,16 @@ Sequence transduction layers
 
 Sequence transduction layers take in a sequence of expression and runs one
 layer over each input. They can be feed-forward (each input is treated
-independently, eg. :py:class:`FeedForwardTransductionLayer`) or recurrent
+independently, eg. :py:class:`Transduction`) or recurrent
 (the output at one step depends on the output at the previous step, eg.
-:py:class:`UnidirectionalLayer`).
+:py:class:`Unidirectional`).
 """
 
 from ..util import _generate_mask, _should_mask, mask_batches, _default_value
 from .base_layers import BaseLayer
 
 
-class FeedForwardTransductionLayer(BaseLayer):
+class Transduction(BaseLayer):
     """Feed forward transduction layer
 
     This layer runs one cell on a sequence of inputs and returns the list of
@@ -132,7 +132,7 @@ class SequenceMaskingLayer(BaseLayer):
         return output_sequence
 
 
-class UnidirectionalLayer(BaseLayer):
+class Unidirectional(BaseLayer):
     """Unidirectional transduction layer
 
     This layer runs a recurrent cell on a sequence of inputs and produces
@@ -145,7 +145,7 @@ class UnidirectionalLayer(BaseLayer):
         # LSTM cell
         lstm_cell = dynn.layers.LSTM(dy.ParameterCollection(), 10, 10)
         # Transduction layer
-        lstm = dynn.layers.UnidirectionalLayer(lstm_cell)
+        lstm = dynn.layers.Unidirectional(lstm_cell)
         # Inputs
         dy.renew_cg()
         xs = [dy.random_uniform(10, batch_size=5) for _ in range(20)]
@@ -164,7 +164,7 @@ class UnidirectionalLayer(BaseLayer):
     """
 
     def __init__(self, cell, output_only=False):
-        super(UnidirectionalLayer, self).__init__("unidirectional")
+        super(Unidirectional, self).__init__("unidirectional")
         self.cell = cell
         self.output_only = output_only
 
@@ -254,7 +254,7 @@ class UnidirectionalLayer(BaseLayer):
         return output_sequence
 
 
-class BidirectionalLayer(BaseLayer):
+class Bidirectional(BaseLayer):
     """Bidirectional transduction layer
 
     This layer runs a recurrent cell on in each direction on a sequence of
@@ -270,7 +270,7 @@ class BidirectionalLayer(BaseLayer):
         fwd_lstm_cell = dynn.layers.LSTM(pc, 10, 10)
         bwd_lstm_cell = dynn.layers.LSTM(pc, 10, 10)
         # Transduction layer
-        bilstm = dynn.layers.BidirectionalLayer(fwd_lstm_cell, bwd_lstm_cell)
+        bilstm = dynn.layers.Bidirectional(fwd_lstm_cell, bwd_lstm_cell)
         # Inputs
         dy.renew_cg()
         xs = [dy.random_uniform(10, batch_size=5) for _ in range(20)]
@@ -294,10 +294,10 @@ class BidirectionalLayer(BaseLayer):
     """
 
     def __init__(self, forward_cell, backward_cell, output_only=False):
-        super(BidirectionalLayer, self).__init__("bidirectional")
-        self.forward_transductor = UnidirectionalLayer(
+        super(Bidirectional, self).__init__("bidirectional")
+        self.forward_transductor = Unidirectional(
             forward_cell, output_only)
-        self.backward_transductor = UnidirectionalLayer(
+        self.backward_transductor = Unidirectional(
             backward_cell, output_only)
         self.output_only = output_only
 

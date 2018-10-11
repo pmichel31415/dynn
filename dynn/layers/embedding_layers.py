@@ -16,7 +16,7 @@ from ..operations import unsqueeze
 from .base_layers import ParametrizedLayer
 
 
-class EmbeddingLayer(ParametrizedLayer):
+class Embeddings(ParametrizedLayer):
     """Layer for embedding elements of a dictionary
 
     Example:
@@ -28,7 +28,7 @@ class EmbeddingLayer(ParametrizedLayer):
         # Parameter collection
         pc = dy.ParameterCollection()
         # Embedding layer of dimension 10
-        embed = EmbeddingLayer(pc,dic, 10)
+        embed = Embeddings(pc,dic, 10)
         # Initialize
         dy.renew_cg()
         embed.init()
@@ -57,7 +57,7 @@ class EmbeddingLayer(ParametrizedLayer):
         pad_mask=None,
         params=None,
     ):
-        super(EmbeddingLayer, self).__init__(pc, "embedding")
+        super(Embeddings, self).__init__(pc, "embedding")
         # Check input
         if not isinstance(dictionary, Dictionary):
             raise ValueError(
@@ -132,7 +132,7 @@ class EmbeddingLayer(ParametrizedLayer):
             embeds = dy.concatenate([unsqueeze(vec, d=0) for vec in vecs], d=0)
         else:
             raise ValueError(
-                "EmbeddingLayer only takes an int , list of ints or matrix of "
+                "Embeddings only takes an int , list of ints or matrix of "
                 "ints as input"
             )
 

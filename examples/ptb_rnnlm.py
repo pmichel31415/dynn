@@ -7,14 +7,14 @@ import numpy as np
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import DenseLayer
-from dynn.layers.embedding_layers import EmbeddingLayer
-from dynn.layers.recurrent_layers import LSTM, StackedRecurrentCells
+from dynn.layers.dense_layers import Affine
+from dynn.layers.embedding_layers import Embeddings
+from dynn.layers.recurrent_layers import StackedLSTM
 from dynn.layers.transduction_layers import (
-    FeedForwardTransductionLayer, UnidirectionalLayer
+    Transduction, Unidirectional
 )
-from dynn.activations import identity
-# from dynn.operations import stack
+
+from dynn.parameter_initialization import UniformInit
 
 from dynn.data import ptb
 from dynn.data.dictionary import Dictionary
@@ -64,35 +64,21 @@ DROPOUT = 0.2
 
 class RNNLM(object):
 
-    def __init__(self, n_layers, embed_dim, hidden_dim, voc_size):
+    def __init__(self, nl, dx, dh):
         # Master parameter collection
         self.pc = dy.ParameterCollection()
         # Word embeddings
-        embeddings = self.pc.add_parameters(
-            (voc_size, embed_dim),
-            init="uniform",
-            scale=0.1
-        )
+        embed_init = UniformInit(0.1)
+        E = self.pc.add_parameters((len(dic), dx), init=embed_init)
         # Embedding layer
-        embed_layer = EmbeddingLayer(self.pc, dic, embed_dim, params=embeddings)
-        self.embed = FeedForwardTransductionLayer(embed_layer)
+        embed = Embeddings(self.pc, dic, dx, params=E)
+        self.embed = Transduction(embed)
         # RNNLM
-        dims = [embed_dim] + [hidden_dim] * n_layers
-        recurrent_cells = [
-            LSTM(self.pc, di, dh, dropout_x=DROPOUT, dropout_h=DROPOUT)
-            for di, dh in zip(dims[:-1], dims[1:])
-        ]
-        self.rnn = UnidirectionalLayer(StackedRecurrentCells(*recurrent_cells))
+        self.lstm_cell = StackedLSTM(self.pc, nl, dx, dh, DROPOUT, DROPOUT)
+        self.rnn = Unidirectional(self.lstm_cell)
         # Final projection layer
-        proj_layer = DenseLayer(
-            self.pc,
-            hidden_dim,
-            voc_size,
-            activation=identity,
-            dropout=DROPOUT,
-            W_p=embeddings,
-        )
-        self.project = FeedForwardTransductionLayer(proj_layer)
+        proj_layer = Affine(self.pc, dh, len(dic), dropout=DROPOUT, W_p=E)
+        self.project = Transduction(proj_layer)
 
     def init(self, test=False, update=True):
         self.embed.init(test=test, update=update)
@@ -135,12 +121,8 @@ print("Creating batch iterators")
 train_batches = BPTTBatchIterator(
     train, batch_size=BATCH_SIZE, seq_length=BPTT_LENGTH
 )
-valid_batches = BPTTBatchIterator(
-    valid, batch_size=1, seq_length=200
-)
-test_batches = BPTTBatchIterator(
-    test, batch_size=1, seq_length=200
-)
+valid_batches = BPTTBatchIterator(valid, batch_size=1, seq_length=200)
+test_batches = BPTTBatchIterator(test, batch_size=1, seq_length=200)
 print(f"{len(train_batches)} training batches")
 
 
@@ -194,7 +176,7 @@ for epoch in range(40):
         # Loss at each step
         nlls = [dy.pickneglogsoftmax_batch(logit, y)
                 for logit, y in zip(logits, targets)]
-        # Accuracy
+        # Aggregate NLL
         nll += dy.sum_batches(dy.esum(nlls)).value()
     # Average NLL
     nll /= valid_batches.num_samples
@@ -232,7 +214,7 @@ for x, targets in test_batches:
     # Loss at each step
     nlls = [dy.pickneglogsoftmax_batch(logit, y)
             for logit, y in zip(logits, targets)]
-    # Accuracy
+    # Aggregate NLL
     nll += dy.sum_batches(dy.esum(nlls)).value()
 # Average NLL
 nll /= test_batches.num_samples

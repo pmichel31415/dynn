@@ -55,7 +55,7 @@ class LambdaLayer(BaseLayer):
 
     You shouldn't use this to stack layers though, ``op`` oughtn't be a layer.
     If you want to stack layers, use
-    :py:class:`combination_layers.StackedLayers`.
+    :py:class:`combination_layers.Sequential`.
 
     Args:
         layer (:py:class:`base_layers.BaseLayer`): The layer to which output
@@ -101,11 +101,11 @@ class UnaryOpLayer(BaseLayer):
 
     .. code-block:: python
 
-        UnaryOpLayer(layer, op)(x) == StackedLayers(layer, LambdaLayer(op))
+        UnaryOpLayer(layer, op)(x) == Sequential(layer, LambdaLayer(op))
 
     You shouldn't use this to stack layers though, ``op`` oughtn't be a layer.
     If you want to stack layers, use
-    :py:class:`combination_layers.StackedLayers`.
+    :py:class:`combination_layers.Sequential`.
 
     Args:
         layer (:py:class:`base_layers.BaseLayer`): The layer to which output

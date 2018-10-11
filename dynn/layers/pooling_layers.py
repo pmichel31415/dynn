@@ -35,7 +35,7 @@ def max_pool_dim(x, d=0, kernel_width=None, stride=1):
     return output
 
 
-class MaxPooling1DLayer(BaseLayer):
+class MaxPool1D(BaseLayer):
     """1D max pooling
 
     Args:
@@ -46,7 +46,7 @@ class MaxPooling1DLayer(BaseLayer):
     """
 
     def __init__(self, default_kernel_size=None, default_stride=1):
-        super(MaxPooling1DLayer, self).__init__("maxpool1d")
+        super(MaxPool1D, self).__init__("maxpool1d")
         self.kernel_size = default_kernel_size
         self.stride = default_stride
 
@@ -162,7 +162,7 @@ class MeanPooling1DLayer(BaseLayer):
         return output
 
 
-class MaxPooling2DLayer(BaseLayer):
+class MaxPool2D(BaseLayer):
     """2D max pooling.
 
     Args:
@@ -175,7 +175,7 @@ class MaxPooling2DLayer(BaseLayer):
     """
 
     def __init__(self, default_kernel_size=None, default_strides=None):
-        super(MaxPooling2DLayer, self).__init__("maxpool1d")
+        super(MaxPool2D, self).__init__("maxpool1d")
         self.kernel_size = util._default_value(
             default_kernel_size, [None, None]
         )

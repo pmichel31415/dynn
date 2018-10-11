@@ -344,3 +344,35 @@ class LSTM(ParametrizedLayer, RecurrentCell):
 
     def get_output(self, state):
         return state[0]
+
+
+class StackedLSTM(StackedRecurrentCells):
+    """Stacked LSTMs
+
+    Args:
+        pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
+            hold the parameters
+        num_layers (int): Number of layers
+        input_dim (int): Input dimension
+        output_dim (int): Output (hidden) dimension
+        dropout_x (float, optional): Input dropout rate (default 0)
+        dropout_h (float, optional): Recurrent dropout rate (default 0)
+    """
+
+    def __init__(
+        self,
+        pc,
+        num_layers,
+        input_dim,
+        hidden_dim,
+        dropout_x=0.0,
+        dropout_h=0.0,
+    ):
+        # Create recurrent cells
+        dims = [input_dim] + [hidden_dim]*num_layers
+        lstm_cells = [
+            LSTM(self.pc, di, dh, dropout_x=dropout_x, dropout_h=dropout_h)
+            for di, dh in zip(dims[:-1], dims[1:])
+        ]
+        # Initialize
+        super(StackedLSTM, self).__init__(*lstm_cells)

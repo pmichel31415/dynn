@@ -12,7 +12,7 @@ from .. import util, operations
 from .base_layers import BaseLayer
 
 
-class StackedLayers(BaseLayer):
+class Sequential(BaseLayer):
     """A helper class to stack layers into deep networks.
 
     Args:
@@ -70,11 +70,11 @@ class StackedLayers(BaseLayer):
             return hs[1:]
 
 
-class ConcatenatedLayers(BaseLayer):
+class Parallel(BaseLayer):
     """A helper class to run layers on the same input and concatenate their outputs
 
     This can be used to create 2d conv layers with multiple kernel sizes by
-    concatenating multiple :py:class:`dynn.layers.Conv2DLayer` .
+    concatenating multiple :py:class:`dynn.layers.Conv2D` .
 
 
     Args:

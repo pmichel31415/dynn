@@ -6,12 +6,12 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import DenseLayer
-from dynn.layers.embedding_layers import EmbeddingLayer
-from dynn.layers.convolution_layers import Conv1DLayer
-from dynn.layers.pooling_layers import MaxPooling1DLayer
-from dynn.layers.combination_layers import StackedLayers, ConcatenatedLayers
-from dynn.activations import relu, identity
+from dynn.layers.dense_layers import Affine
+from dynn.layers.embedding_layers import Embeddings
+from dynn.layers.convolution_layers import Conv1D
+from dynn.layers.pooling_layers import MaxPool1D
+from dynn.layers.combination_layers import Sequential, Parallel
+from dynn.activations import relu
 
 from dynn.data import sst
 from dynn.data import preprocess
@@ -69,7 +69,7 @@ test_batches = PaddedSequenceBatchIterator(
 # Hyper-parameters
 EMBED_DIM = 300
 FILTERS = {1: 128, 2: 256, 3: 256}
-HIDDEN_DIM = sum(FILTERS.values()) 
+HIDDEN_DIM = sum(FILTERS.values())
 N_CLASSES = 2
 
 # Master parameter collection
@@ -77,24 +77,24 @@ pc = dy.ParameterCollection()
 
 
 # Embeddings Layer
-embeddings = EmbeddingLayer(pc, dic, EMBED_DIM, pad_mask=0.0)
+embeddings = Embeddings(pc, dic, EMBED_DIM, pad_mask=0.0)
 # Convolutions
 conv1d = [
-    Conv1DLayer(pc, EMBED_DIM, number, width, activation=relu)
+    Conv1D(pc, EMBED_DIM, number, width, activation=relu)
     for width, number in FILTERS.items()
 ]
 # Network
-network = StackedLayers(
+network = Sequential(
     embeddings,
     # Convolution layer
-    ConcatenatedLayers(
+    Parallel(
         *conv1d,
         dim=-1,
     ),
     # Max pooling
-    MaxPooling1DLayer(),
+    MaxPool1D(),
     # Softmax layer
-    DenseLayer(pc, HIDDEN_DIM, N_CLASSES, activation=identity, dropout=0.5),
+    Affine(pc, HIDDEN_DIM, N_CLASSES, dropout=0.5),
 )
 
 # Optimizer

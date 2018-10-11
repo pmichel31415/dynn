@@ -9,7 +9,7 @@ from dynn.data.dictionary import Dictionary
 from dynn.layers import embedding_layers
 
 
-class TestEmbeddingLayer(TestCase):
+class TestEmbeddings(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -19,7 +19,7 @@ class TestEmbeddingLayer(TestCase):
 
     def test_forward_backward(self):
         # Create compact lstm
-        embed = embedding_layers.EmbeddingLayer(
+        embed = embedding_layers.Embeddings(
             self.pc, self.dic, self.dim,
         )
         # Initialize computation graph

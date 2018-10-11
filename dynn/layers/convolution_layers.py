@@ -11,7 +11,7 @@ from .. import util, operations
 from .base_layers import ParametrizedLayer
 
 
-class Conv1DLayer(ParametrizedLayer):
+class Conv1D(ParametrizedLayer):
     """1D convolution along the first dimension
 
     Args:
@@ -43,7 +43,7 @@ class Conv1DLayer(ParametrizedLayer):
         default_zero_padded=True,
         default_stride=1,
     ):
-        super(Conv1DLayer, self).__init__(pc, "conv1d")
+        super(Conv1D, self).__init__(pc, "conv1d")
         # Hyper-parameters
         self.input_dim = input_dim
         self.num_kernels = num_kernels
@@ -120,7 +120,7 @@ class Conv1DLayer(ParametrizedLayer):
         return output
 
 
-class Conv2DLayer(ParametrizedLayer):
+class Conv2D(ParametrizedLayer):
     """2D convolution
 
     Args:
@@ -153,7 +153,7 @@ class Conv2DLayer(ParametrizedLayer):
         default_zero_padded=True,
         default_strides=None,
     ):
-        super(Conv2DLayer, self).__init__(pc, "conv2d")
+        super(Conv2D, self).__init__(pc, "conv2d")
         # Hyper-parameters
         self.num_channels = num_channels
         self.num_kernels = num_kernels

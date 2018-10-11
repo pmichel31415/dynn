@@ -6,10 +6,10 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import DenseLayer
-from dynn.layers.combination_layers import StackedLayers
+from dynn.layers.dense_layers import Affine
+from dynn.layers.combination_layers import Sequential
 from dynn.layers.flow_layers import FlattenLayer
-from dynn.activations import relu, identity
+from dynn.activations import relu
 
 from dynn.data import mnist
 from dynn.data import preprocess
@@ -28,13 +28,13 @@ HIDDEN_DIM = 100
 pc = dy.ParameterCollection()
 
 # Network
-network = StackedLayers(
+network = Sequential(
     # Flatten 28 x 28 x 1 image to a vector
     FlattenLayer(),
     # Add all them layers
-    DenseLayer(pc, 28**2, HIDDEN_DIM, activation=relu),
-    DenseLayer(pc, HIDDEN_DIM, HIDDEN_DIM, activation=relu),
-    DenseLayer(pc, HIDDEN_DIM, 10, activation=identity, dropout=0.1)
+    Affine(pc, 28**2, HIDDEN_DIM, activation=relu),
+    Affine(pc, HIDDEN_DIM, HIDDEN_DIM, activation=relu),
+    Affine(pc, HIDDEN_DIM, 10, dropout=0.1)
 )
 
 # Optimizer
