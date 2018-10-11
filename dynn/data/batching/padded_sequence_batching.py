@@ -1,59 +1,9 @@
 #!/usr/bin/env python3
 import logging
-from collections import Iterable
 
 import numpy as np
 
-
-class BatchedSequence(object):
-    """Batched sequence object with padding
-
-    This wraps a list of integer sequences into a nice array padded to the
-    longest sequence. The batch dimension (number of sequences) is the last
-    dimension.
-
-    By default the sequences are padded to the right which means that they
-    are aligned to the left (they all start at index 0)
-
-    Args:
-        sequences (list): List of list of integers
-        pad_idx (int): Default index for padding
-        left_aligned (bool, optional): Align to the left (all sequences start
-            at the same position).
-    """
-
-    def __init__(self, sequences, pad_idx, left_aligned=True):
-        if len(sequences) == 0:
-            raise ValueError("Can't batch 0 sequences together")
-        if not isinstance(sequences[0], Iterable):
-            sequences = [sequences]
-        self.lengths = [len(seq) for seq in sequences]
-        self.pad_idx = pad_idx
-        self.left_aligned = left_aligned
-        self.sequences = self.collate(sequences)
-
-    def collate(self, sequences):
-        """Pad and concatenate sequences to an array
-
-        Args:
-        sequences (list): List of list of integers
-        pad_idx (int): Default index for padding
-
-        Returns:
-            :py:class:`np.ndarray`: ``max_len x batch_size`` array
-        """
-        max_len = max(self.lengths)
-        # Initialize the array with the padding index
-        batch_array = np.full(
-            (max_len, len(sequences)), self.pad_idx, dtype=int
-        )
-        # Fill the indices values
-        for batch_idx, sequence in enumerate(sequences):
-            if self.left_aligned:
-                batch_array[:self.lengths[batch_idx], batch_idx] = sequence
-            else:
-                batch_array[-self.lengths[batch_idx]:, batch_idx] = sequence
-        return batch_array
+from .batched_sequence import BatchedSequence
 
 
 class PaddedSequenceBatchIterator(object):
