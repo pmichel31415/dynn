@@ -11,7 +11,7 @@ from urllib.request import urlretrieve
 from urllib.parse import urljoin
 
 
-def download_if_not_there(file, url, path, force=False):
+def download_if_not_there(file, url, path, force=False, local_file=None):
     """Downloads a file from the given url if and only if the file doesn't
     already exist in the provided path or ``force=True``
 
@@ -21,13 +21,15 @@ def download_if_not_there(file, url, path, force=False):
         path (str): Path to the local folder where the file should be stored
         force (bool, optional): Force the file download (useful if you suspect
             that the file might have changed)
+        file (str): File name for the local file (defaults to ``file``)
     """
     # Path to local file
     abs_path = os.path.abspath(path)
-    local_file_path = os.path.join(abs_path, file)
+    local_file = local_file or file
+    local_file_path = os.path.join(abs_path, local_file)
     # Download if needed
     if force or not os.path.isfile(local_file_path):
-        print(f"Downloading file {file} to folder {abs_path} from {url}")
+        print(f"Downloading file {local_file} to folder {abs_path} from {url}")
         file_url = urljoin(url, file)
         return urlretrieve(file_url, local_file_path)
     return None

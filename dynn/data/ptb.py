@@ -81,7 +81,6 @@ def load_ptb(path, eos=None):
         tuple: train, valid and test sets (tuple of tree/labels tuples)
     """
     splits = []
-    # TODO: binary labels
     for split in ["train", "valid", "test"]:
         data = list(read_ptb(split, path, eos=eos))
         splits.append(data)

@@ -98,7 +98,6 @@ def load_sst(path, terminals_only=True, binary=False):
         tuple: train, dev and test sets (tuple of tree/labels tuples)
     """
     splits = []
-    # TODO: binary labels
     for split in ["train", "dev", "test"]:
         data = list(
             read_sst(split, path, terminals_only=terminals_only, binary=binary)
