@@ -44,11 +44,11 @@ trainer = dy.MomentumSGDTrainer(pc, learning_rate=0.01, mom=0.9)
 # ====
 
 # Download MNIST
-mnist.download_mnist(".")
+mnist.download_mnist("data")
 
 # Load the data
 print("Loading MNIST data")
-(train_x, train_y), (test_x, test_y) = mnist.load_mnist(".")
+(train_x, train_y), (test_x, test_y) = mnist.load_mnist("data")
 
 print("Normalizing pixel values")
 train_x, test_x = preprocess.normalize([train_x, test_x])

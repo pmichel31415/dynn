@@ -27,11 +27,11 @@ dynn.set_random_seed(31415)
 # ====
 
 # Download SST
-ptb.download_ptb(".")
+ptb.download_ptb("data")
 
 # Load the data
 print("Loading the PTB data")
-train, valid, test = ptb.load_ptb(".", eos="<eos>")
+train, valid, test = ptb.load_ptb("data", eos="<eos>")
 
 # Learn the dictionary
 print("Building the dictionary")

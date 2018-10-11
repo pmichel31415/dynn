@@ -107,7 +107,5 @@ ENV/
 .IDEA/
 
 # Data and models
-*.gz
-*.zip
+data/*
 *.model
-*.tgz

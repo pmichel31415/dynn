@@ -26,7 +26,7 @@ dynn.set_random_seed(31415)
 # ====
 
 # Download SST
-sst.download_sst(".")
+sst.download_sst("data")
 
 # Load the data
 print("Loading the SST data")
@@ -34,7 +34,7 @@ print("Loading the SST data")
     (train_x, train_y),
     (dev_x, dev_y),
     (test_x, test_y),
-) = sst.load_sst(".", terminals_only=True, binary=True)
+) = sst.load_sst("data", terminals_only=True, binary=True)
 
 # Lowercase
 print("Lowercasing")
