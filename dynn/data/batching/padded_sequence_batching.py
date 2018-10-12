@@ -81,8 +81,9 @@ class PaddedSequenceBatchIterator(object):
         self.pad_idx = dictionary.pad_idx
         # Initial position and order
         self.position = 0
-        self.order = []
         self.batches = []
+        # Keep track of each sequence's position
+        self.original_position = np.arange(self.num_samples, dtype=int)
         # Reset position and shuffle the order if applicable
         self.reset()
 
@@ -113,6 +114,7 @@ class PaddedSequenceBatchIterator(object):
         """
         batch_data = BatchedSequence(
             self.data[index],
+            original_idxs=self.original_position[index],
             pad_idx=self.pad_idx,
             left_aligned=self.left_aligned,
         )
@@ -144,40 +146,30 @@ class PaddedSequenceBatchIterator(object):
         # If the sentences aren't grouped by length, shuffle them now
         data_order = np.arange(self.num_samples)
         if self.shuffle and not self.group_by_length:
-            np.random.shuffle(self.order)
+            np.random.shuffle(data_order)
         # Group the sentence into batches with appropriate size
         batches = []
         current_batch = []
         n_tokens = n_samples = 0
         for idx in data_order:
             sample = self.data[idx]
+            # Handle the case if the batch is finished
+            if len(sample) > self.max_tokens:
+                logging.warning(f"Discarding one sample of size {len(sample)}")
+                continue
             # Check if there are too many tokens/samples
             too_many_samples = n_samples + 1 > self.max_samples
             too_many_tokens = n_tokens + len(sample) > self.max_tokens
             # Handle the case if the batch is finished
             if too_many_samples or too_many_tokens:
+                # Add current batch and start a new one
+                batches.append(current_batch)
+                current_batch = []
                 n_tokens = n_samples = 0
-                if len(current_batch) == 0:
-                    # If the sample itself causes the overflow, ignore it
-                    # with a warning
-                    logging.warning(
-                        f"Discarding one sample of size {len(sample)}"
-                    )
-                    continue
-                else:
-                    # Add current batch and start a new one
-                    batches.append(current_batch)
-                    current_batch = []
             # Add the sample to the current batch
-            if len(sample) > self.max_tokens:
-                logging.warning(
-                    f"Discarding one sample of size {len(sample)}"
-                )
-                continue
-            else:
-                current_batch.append(idx)
-                n_samples += 1
-                n_tokens += len(sample)
+            current_batch.append(idx)
+            n_samples += 1
+            n_tokens += len(sample)
         # Add last batch
         if len(current_batch) != 0:
             batches.append(current_batch)
