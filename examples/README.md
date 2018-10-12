@@ -39,5 +39,5 @@ On a Titan X GPU this runs in ~=6.3s per epoch. The test accuracy after 2 epochs
 
 [`ptb_rnnlm.py`](ptb_rnnlm.py) implement a 2 layer LSTM language model with tied embeddings on the Penn TreeBank (PTB) dataset
 
-On a GTX 1080 Ti GPU this runs in ~=1m per epoch (~=42s with autobatching). The test perplexity after 40 epochs is **84.78**
+On a GTX 1080 Ti GPU this runs in ~=1m per epoch (\~=42s with autobatching). The test perplexity after 40 epochs is **84.78**
 
