@@ -61,11 +61,12 @@ def download_iwslt(path=".", year="2016", langpair="de-en", force=False):
         abs_filename = os.path.join(os.path.abspath(path), local_file)
         # Create target dir
         directory = local_dir(year, langpair)
-        if not os.path.isdir(directory):
-            os.mkdir(directory)
+        root_path = os.path.join(os.path.abspath(path), directory)
+        if not os.path.isdir(root_path):
+            os.mkdir(root_path)
         # Extract
         with tarfile.open(abs_filename) as tar:
-            tar.extractall(directory)
+            tar.extractall(root_path)
 
 
 def read_iwslt(split, path, year="2016", langpair="de-en", eos=None):

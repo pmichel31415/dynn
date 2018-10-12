@@ -32,16 +32,16 @@ dynn.set_random_seed(31415)
 # ================
 
 VOC_SIZE = 30000
-LEARNING_RATE = 20
-LEARNING_RATE_DECAY = 4.0
-CLIP_NORM = 0.25
+LEARNING_RATE = 0.001
+LEARNING_RATE_DECAY = 2.0
+CLIP_NORM = 5.0
 BATCH_SIZE = 20
 N_LAYERS = 1
-EMBED_DIM = 200
-HIDDEN_DIM = 200
+EMBED_DIM = 256
+HIDDEN_DIM = 512
 DROPOUT = 0.2
-LABEL_SMOOTHING = 1
-N_EPOCHS = 1
+LABEL_SMOOTHING = 0.1
+N_EPOCHS = 10
 
 
 # Data
@@ -139,7 +139,7 @@ class AttBiLSTM(object):
             # First project to embedding dim
             Affine(self.pc, dh, dx),
             # Then logit layer with weights tied to the word embeddings
-            Affine(self.pc, dh, len(dic_tgt), dropout=DROPOUT, W_p=E_tgt)
+            Affine(self.pc, dx, len(dic_tgt), dropout=DROPOUT, W_p=E_tgt)
         )
         self.project_all = Transduction(self.project)
 
@@ -247,7 +247,7 @@ network = AttBiLSTM(N_LAYERS, EMBED_DIM, HIDDEN_DIM)
 # network.pc.save("iwslt_att.model")
 
 # Optimizer
-trainer = dy.SimpleSGDTrainer(network.pc, learning_rate=LEARNING_RATE)
+trainer = dy.AdamTrainer(network.pc, alpha=LEARNING_RATE)
 trainer.set_clip_threshold(CLIP_NORM)
 
 
@@ -257,7 +257,7 @@ trainer.set_clip_threshold(CLIP_NORM)
 # Create the batch iterators
 print("Creating batch iterators")
 train_batches = SequencePairsBatchIterator(
-    train_src, train_tgt, dic_src, dic_tgt, max_samples=100, max_tokens=4000,
+    train_src, train_tgt, dic_src, dic_tgt, max_samples=64, max_tokens=2000,
 )
 dev_batches = SequencePairsBatchIterator(
     dev_src, dev_tgt, dic_src, dic_tgt, max_samples=10)
@@ -273,8 +273,6 @@ best_ppl = np.inf
 for epoch in range(N_EPOCHS):
     # Time the epoch
     start_time = time.time()
-    # This state will be passed around for truncated BPTT
-    state_val = None
     for src, tgt in train_batches:
         # Renew the computation graph
         dy.renew_cg()
@@ -290,6 +288,8 @@ for epoch in range(N_EPOCHS):
                for lp, y in zip(logprobs, tgt.sequences)]
         # Mask losses and reduce
         masked_nll = - stack(lls, d=-1) * tgt.get_mask()
+        # Rescale by inverse length
+        masked_nll = dy.cdiv(masked_nll, dy.inputTensor(tgt.lengths,batched=True))
         # Reduce losses
         nll = dy.mean_batches(masked_nll)
         # Backward pass
@@ -321,15 +321,14 @@ for epoch in range(N_EPOCHS):
         # log prob at each timestep
         logprobs = [dy.log_softmax(logit) for logit in logits]
         # Label smoothed log likelihoods
-        lls = [dy.pick_batch(lp, y) * (1-LABEL_SMOOTHING) +
-               dy.mean_elems(lp) * LABEL_SMOOTHING
+        lls = [dy.pick_batch(lp, y)
                for lp, y in zip(logprobs, tgt.sequences)]
         # Mask losses and reduce
         masked_nll = - stack(lls, d=-1) * tgt.get_mask()
         # Aggregate NLL
         nll += dy.sum_batches(masked_nll).value()
     # Average NLL
-    nll /= dev_batches.num_samples
+    nll /= dev_batches.tgt_size
     # Perplexity
     ppl = np.exp(nll)
     # Print final result

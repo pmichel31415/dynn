@@ -76,6 +76,8 @@ class SequencePairsBatchIterator(object):
                 "{len(src_data)} != {len(tgt_data)}"
             )
         self.num_samples = len(src_data)
+        self.src_size = sum(len(src) for src in src_data)
+        self.tgt_size = sum(len(tgt) for tgt in tgt_data)
         # Main parameters
         self.max_samples = max_samples
         self.max_tokens = max_tokens
