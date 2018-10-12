@@ -6,11 +6,11 @@ import time
 import dynet as dy
 
 from dynn.layers.functional_layers import LambdaLayer
-from dynn.layers.dense_layers import DenseLayer
+from dynn.layers.dense_layers import Affine
 from dynn.layers.residual_layers import ResidualLayer
-from dynn.layers.convolution_layers import Conv2DLayer
+from dynn.layers.convolution_layers import Conv2D
 from dynn.layers.flow_layers import FlattenLayer
-from dynn.layers.combination_layers import StackedLayers
+from dynn.layers.combination_layers import Sequential
 from dynn.activations import relu, identity
 
 from dynn.data import cifar10
@@ -29,7 +29,7 @@ pc = dy.ParameterCollection()
 # Keep track of the number of pixels
 n_pixels = 32 * 32
 # Initial layer
-res_layers = [Conv2DLayer(pc, 3, 16, [3, 3], activation=relu)]
+res_layers = [Conv2D(pc, 3, 16, [3, 3], activation=relu)]
 # Stacks of residual blocks
 for n_res_block in range(4):
     # Stride
@@ -38,8 +38,8 @@ for n_res_block in range(4):
     in_channels = 16*(2**max(n_res_block-1, 0))
     num_kernels = 16 * (2 ** n_res_block)
     # Build the residual block
-    block = StackedLayers(
-        Conv2DLayer(
+    block = Sequential(
+        Conv2D(
             pc,
             in_channels,
             num_kernels,
@@ -48,7 +48,7 @@ for n_res_block in range(4):
             activation=relu,
             nobias=True,
         ),
-        Conv2DLayer(
+        Conv2D(
             pc,
             num_kernels,
             num_kernels,
@@ -59,7 +59,7 @@ for n_res_block in range(4):
     )
     # Shortcut layer so that the input is the same shape as the output
     if stride > 1 or in_channels != num_kernels:
-        shortcut = Conv2DLayer(
+        shortcut = Conv2D(
             pc,
             in_channels,
             num_kernels,
@@ -71,7 +71,7 @@ for n_res_block in range(4):
     else:
         shortcut = None
     # Full residual block
-    res_block = StackedLayers(
+    res_block = Sequential(
         # Actual residual layer
         ResidualLayer(block, shortcut_transform=shortcut),
         # Activation
@@ -82,15 +82,15 @@ for n_res_block in range(4):
     # Divide the number of pixels according to the stride
     n_pixels //= stride**2
 
-residual_stack = StackedLayers(*res_layers)
+residual_stack = Sequential(*res_layers)
 
-network = StackedLayers(
+network = Sequential(
     residual_stack,
     # Flatten the resulting 3d tensor
     FlattenLayer(),
     # Final Multilayer perceptron
-    DenseLayer(pc, n_pixels * num_kernels, 128, activation=relu),
-    DenseLayer(pc, 128, 10, activation=identity, dropout=0.1)
+    Affine(pc, n_pixels * num_kernels, 128, activation=relu),
+    Affine(pc, 128, 10, activation=identity, dropout=0.1)
 )
 
 # Optimizer
@@ -100,10 +100,10 @@ trainer = dy.MomentumSGDTrainer(pc, learning_rate=0.01, mom=0.9)
 # ====
 
 # Download MNIST
-cifar10.download_cifar10(".")
+cifar10.download_cifar10("data")
 
 # Load the data
-(train_x, train_y), (test_x, test_y) = cifar10.load_cifar10(".")
+(train_x, train_y), (test_x, test_y) = cifar10.load_cifar10("data")
 
 # Create the batch iterators
 train_batches = NumpyBatchIterator(train_x, train_y, batch_size=64)
