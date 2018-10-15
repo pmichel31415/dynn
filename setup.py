@@ -44,7 +44,7 @@ setup(
     author="Paul Michel",
     author_email="pmichel1@cs.cmu.edu",
     python_requires=">=3.6",
-    install_requires="dynet",
+    install_requires=["dynet", "sacrebleu"],
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",

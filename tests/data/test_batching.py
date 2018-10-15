@@ -151,7 +151,7 @@ class TestPaddedSequenceBatchIterator(TestCase):
                 len([
                     w for seq in x.sequences
                     for w in seq
-                    if x != batched_dataset.pad_idx
+                    if w != batched_dataset.pad_idx
                 ]),
                 self.max_tokens
             )
@@ -169,7 +169,7 @@ class TestPaddedSequenceBatchIterator(TestCase):
                 len([
                     w for seq in x.sequences
                     for w in seq
-                    if x != batched_dataset.pad_idx
+                    if w != batched_dataset.pad_idx
                 ]),
                 self.max_tokens
             )
@@ -195,6 +195,18 @@ class TestPaddedSequenceBatchIterator(TestCase):
         # happens by chance and the test fails is very low given the number of
         # labels)
         self.assertTrue(np.allclose(first_epoch_labels, second_epoch_labels))
+
+    def test_original_order(self):
+        batched_dataset = self._dummy_classification_iterator(shuffle=True)
+        # Record the original labels
+        labels = batched_dataset.targets
+        # Labels in the prder that they are provided by the iterator
+        batches = [(batch, y) for batch, y in batched_dataset]
+        random_labels = np.concatenate([y for _, y in batches])
+        # Pointer to the original index
+        order = np.concatenate([batch.original_idxs for batch, _ in batches])
+        # Check that the given order is legit
+        self.assertTrue(np.allclose(labels[order], random_labels))
 
     def test_length(self):
         batched_dataset = self._dummy_classification_iterator()

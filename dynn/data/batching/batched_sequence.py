@@ -18,16 +18,22 @@ class BatchedSequence(object):
 
     Args:
         sequences (list): List of list of integers
+        original_idxs (list): This list should point to the original position
+            of each sequence in the data (before shuffling/reordering). This is
+            useful when you want to access information that has been discarded
+            during preprocessing (eg original sentence before numberizing and
+            ``<unk>`` ing in MT).
         pad_idx (int): Default index for padding
         left_aligned (bool, optional): Align to the left (all sequences start
             at the same position).
     """
 
-    def __init__(self, sequences, pad_idx, left_aligned=True):
+    def __init__(self, sequences, original_idxs, pad_idx, left_aligned=True):
         if len(sequences) == 0:
             raise ValueError("Can't batch 0 sequences together")
         if not isinstance(sequences[0], Iterable):
             sequences = [sequences]
+        self.original_idxs = original_idxs
         self.lengths = [len(seq) for seq in sequences]
         self.pad_idx = pad_idx
         self.left_aligned = left_aligned

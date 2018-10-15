@@ -108,6 +108,9 @@ class SequencePairsBatchIterator(object):
         # Store the data in the appropriate order
         self.src_data = np.asarray([src_data[idx] for idx in initial_order])
         self.tgt_data = np.asarray([tgt_data[idx] for idx in initial_order])
+        # Keep track of the original position of each sentence
+        self.original_position = np.arange(self.num_samples)
+        self.original_position[initial_order] = np.arange(self.num_samples)
 
         # Initial position and order
         self.position = 0
@@ -140,11 +143,13 @@ class SequencePairsBatchIterator(object):
         """
         src_batch = BatchedSequence(
             self.src_data[index],
+            original_idxs=self.original_position[index],
             pad_idx=self.src_pad_idx,
             left_aligned=self.src_left_aligned,
         )
         tgt_batch = BatchedSequence(
             self.tgt_data[index],
+            original_idxs=self.original_position[index],
             pad_idx=self.tgt_pad_idx,
             left_aligned=self.tgt_left_aligned,
         )
