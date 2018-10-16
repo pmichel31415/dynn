@@ -47,55 +47,34 @@ N_EPOCHS = 10
 # Data
 # ====
 
-# Download SST
+# Download IWSLT
 iwslt.download_iwslt("data", year="2016", langpair="fr-en")
 
 # Load the data
 print("Loading the IWSLT data")
 (
-    (train_src, train_tgt),
-    (dev_src, dev_tgt),
-    (test_src, test_tgt),
+    train, dev, test
 ) = iwslt.load_iwslt("data", year="2016", langpair="fr-en", eos="<eos>")
-print(f"{len(train_src)} training samples")
-print(f"{len(dev_src)} dev samples")
-print(f"{len(test_src)} test samples")
+print(f"{len(train[0])} training samples")
+print(f"{len(dev[0])} dev samples")
+print(f"{len(test[0])} test samples")
 
-# Prepare French data
-print("Preparing French data...")
 print("Lowercasing")
-train_src = preprocess.lowercase(train_src)
-dev_src = preprocess.lowercase(dev_src)
-test_src = preprocess.lowercase(test_src)
+train, dev, test = preprocess.lowercase([train, dev, test])
 
 # Learn the dictionaries
-print("Building the dictionary")
-dic_src = Dictionary.from_data(train_src, max_size=VOC_SIZE)
+print("Building the dictionaries")
+dic_src = Dictionary.from_data(train[0], max_size=VOC_SIZE)
 dic_src.freeze()
-
-# Numberize the data
-print("Numberizing")
-train_src = dic_src.numberize(train_src)
-dev_src = dic_src.numberize(dev_src)
-test_src = dic_src.numberize(test_src)
-
-# Prepare English data
-print("Preparing English data...")
-print("Lowercasing")
-train_tgt = preprocess.lowercase(train_tgt)
-dev_tgt = preprocess.lowercase(dev_tgt)
-test_tgt = preprocess.lowercase(test_tgt)
-
-# Learn the dictionaries
-print("Building the dictionary")
-dic_tgt = Dictionary.from_data(train_tgt, max_size=VOC_SIZE)
+dic_src.save("iwslt_att.dic.src")
+dic_tgt = Dictionary.from_data(train[1], max_size=VOC_SIZE)
 dic_tgt.freeze()
+dic_src.save("iwslt_att.dic.tgt")
 
 # Numberize the data
 print("Numberizing")
-train_tgt = dic_tgt.numberize(train_tgt)
-dev_tgt = dic_tgt.numberize(dev_tgt)
-test_tgt = dic_tgt.numberize(test_tgt)
+train_src, dev_src, test_src = dic_src.numberize([train[0], dev[0], test[0]])
+train_tgt, dev_tgt, test_tgt = dic_src.numberize([train[1], dev[1], test[1]])
 
 
 # Model
@@ -190,8 +169,17 @@ class AttBiLSTM(object):
 
         return logits
 
-    def sample(self, src, tau=1.0):
+    def decode(self, src, beam_size=3):
+        """Find the best translation using beam search"""
         batch_size = src.batch_size
+        # Defer batch size > 1 to multiple calls
+        if batch_size > 1:
+            sents, aligns = [], []
+            for b in range(batch_size):
+                sent, align = self.decode(src[b], beam_size)
+                sents.append(sent[0])
+                aligns.append(align[0])
+            return sents, aligns
         # Encode
         # ------
         X = self.encode(src)
@@ -201,45 +189,67 @@ class AttBiLSTM(object):
         attn_mask = src.get_mask(base_val=0, mask_val=-np.inf)
         # Max length
         max_len = 2 * src.max_length
-        # Generated words
-        sents = [[] for _ in range(batch_size)]
-        x = self.sos.batch([0] * batch_size)
-        # Initialize decoder state
-        dec_state = self.dec_cell.initial_value(1)
+        # Initialize beams
+        first_beam = {
+            "wemb": self.sos[0],  # Previous word embedding
+            "state": self.dec_cell.initial_value(1),  # Decoder state
+            "score": 0.0,  # score
+            "words": [],  # generated words
+            "align": [],  # Alignments given by attention
+            "is_over": False,  # is over
+        }
+        beams = [first_beam]
         # Start decoding
-        is_over = [False for _ in range(batch_size)]
-        while not all(is_over) and max(len(sent) for sent in sents) < max_len:
-            # Attention query: previous hidden state and current word embedding
-            query = dy.concatenate([x, self.dec_cell.get_output(dec_state)])
-            # Attend
-            ctx, _ = self.attend(query, X, X, mask=attn_mask)
-            # Both context and target word embedding will be fed to the decoder
-            dec_input = dy.concatenate([x, ctx])
-            # Update decoder state
-            dec_state = self.dec_cell(dec_input, *dec_state)
-            # Save output
-            h = self.dec_cell.get_output(dec_state)
-            # Get log_probs
-            logits = self.project(h)
-            log_p = dy.log_softmax(logits)
-            # Add gumbel noise for sampling
-            noise = dy.random_gumbel(len(dic_tgt), batch_size=batch_size)
-            log_p += tau * noise
-            # Sample
-            next_word = log_p.npvalue().reshape(-1, batch_size).argmax(axis=0)
-            # Check for EOS in each batch element and add the word to the
-            # output sentences accordingly
-            for b, w in enumerate(next_word):
-                if is_over[b]:
+        while not beams[-1]["is_over"] and len(beams[-1]["words"]) < max_len:
+            new_beams = []
+            for beam in beams:
+                # Don't do anything if the beam is over
+                if beam["is_over"]:
                     continue
-                elif w == dic_tgt.eos_idx:
-                    is_over[b] = True
-                else:
-                    sents[b].append(w)
-            # Embed the last word
-            x = self.tgt_embed([sent[-1] for sent in sents])
-        # Return the sentences
-        return sents
+                # Attention query: previous hidden state and current
+                # word embedding
+                prev_h = self.dec_cell.get_output(beam["state"])
+                query = dy.concatenate([beam["wemb"], prev_h])
+                # Attend
+                ctx, attn_weights = self.attend(query, X, X, mask=attn_mask)
+                # Both context and target word embedding will be fed
+                # to the decoder
+                dec_input = dy.concatenate([beam["wemb"], ctx])
+                # Update decoder state
+                dec_state = self.dec_cell(dec_input, *beam["state"])
+                # Save output
+                h = self.dec_cell.get_output(dec_state)
+                # Get log_probs
+                log_p = dy.log_softmax(self.project(h)).npvalue()
+                # top k words
+                next_words = log_p.argsort()[-beam_size:]
+                # alignments from attention
+                align = attn_weights.npvalue().argmax()
+                # Add to new beam
+                for word in next_words:
+                    # Handle stop condition
+                    if word == dic_tgt.eos_idx:
+                        new_beam = {
+                            "words": beam["words"],
+                            "score": beam["score"] + log_p[word],
+                            "align": beam["align"],
+                            "is_over": True,
+                        }
+                    else:
+                        new_beam = {
+                            "wemb": self.tgt_embed(word),
+                            "state": dec_state,
+                            "words": beam["words"] + [word],
+                            "score": beam["score"] + log_p[word],
+                            "align": beam["align"] + [align],
+                            "is_over": False,
+                        }
+                    new_beams.append(new_beam)
+            # Only keep topk new beams
+            beams = sorted(new_beams, key=lambda x: x["score"])[-beam_size:]
+
+        # Return top beam
+        return [beams[-1]["words"]], [beams[-1]["align"]]
 
 
 # Instantiate the network
@@ -260,9 +270,11 @@ train_batches = SequencePairsBatchIterator(
     train_src, train_tgt, dic_src, dic_tgt, max_samples=64, max_tokens=2000,
 )
 dev_batches = SequencePairsBatchIterator(
-    dev_src, dev_tgt, dic_src, dic_tgt, max_samples=10)
+    dev_src, dev_tgt, dic_src, dic_tgt, max_samples=10
+)
 test_batches = SequencePairsBatchIterator(
-    test_src, test_tgt, dic_src, dic_tgt, max_samples=10)
+    test_src, test_tgt, dic_src, dic_tgt, max_samples=10
+)
 print(f"{len(train_batches)} training batches")
 
 
@@ -342,27 +354,54 @@ for epoch in range(N_EPOCHS):
         trainer.learning_rate /= LEARNING_RATE_DECAY
         print(f"New learning rate: {trainer.learning_rate}")
 
-# Testing
-# =======
+# Evaluation
+# ==========
 
 # Load model
 print("Reloading best model")
-# network.pc.populate("iwslt_att.model")
+network.pc.populate("iwslt_att.model")
 
-# Generate from dev data
-for src, tgt in dev_batches:
-    # Renew the computation graph
-    dy.renew_cg()
-    # Initialize layers
-    network.init(test=True, update=False)
-    # Compute logits
-    hyp = network.sample(src)
-    # Print
-    for b in range(src.batch_size):
-        print("-"*80)
-        src_sent = dic_src.string(src.sequences[:, b], join_with=" ")
-        print(f"src:\t{src_sent}")
-        hyp_sent = dic_src.string(hyp[b], join_with=" ")
-        print(f"hyp:\t{hyp_sent}")
-        tgt_sent = dic_tgt.string(tgt.sequences[:, b], join_with=" ")
-        print(f"tgt:\t{tgt_sent}")
+
+def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
+    """Compute BLEU score over a given dataset"""
+    hyps = []
+    refs = []
+    # Generate from the source data
+    for src, tgt in batch_iterator:
+        # Renew the computation graph
+        dy.renew_cg()
+        # Initialize layers
+        network.init(test=True, update=False)
+        # Compute logits
+        hyp, aligns = network.decode(src, beam_size=BEAM_SIZE)
+        # Print
+        for b in range(tgt.batch_size):
+            # Get original source words
+            src_words = src_sents[src.original_idxs[b]]
+            hyp_words = dic_tgt.string(hyp[b], join_with=None)
+            # replace unks with the alignments given by attention
+            for i, w in enumerate(hyp_words):
+                if w == dic_tgt.unk_tok:
+                    hyp_words[i] = src_words[aligns[b][i]]
+            # Join words
+            src_sent = " ".join(src_words[:-1])
+            hyp_sent = " ".join(hyp_words)
+            ref_sent = " ".join(tgt_sents[tgt.original_idxs[b]][:-1])
+            # Maybe print
+            if verbose:
+                print("-"*80)
+                print(f"src:\t{src_sent}")
+                print(f"hyp:\t{hyp_sent}")
+                print(f"ref:\t{ref_sent}")
+            # Keep track
+            hyps.append(hyp_sent)
+            refs.append(ref_sent)
+    # BLEU
+    return sacrebleu.corpus_bleu(hyps, [refs]).score
+
+# Dev set
+dev_bleu = eval_bleu(dev_batches, dev[0], dev[1], verbose=True)
+print(f"Dev BLEU: {dev_bleu:.2f}")
+# Test set
+test_bleu = eval_bleu(test_batches, test[0], test[1])
+print(f"Test BLEU: {test_bleu:.2f}")
