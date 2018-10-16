@@ -98,7 +98,7 @@ class TestNumpyBatchIterator(TestCase):
 class TestPaddedSequenceBatchIterator(TestCase):
 
     def setUp(self):
-        self.dic = dictionary.Dictionary(symbols="abcdefg".split())
+        self.dic = dictionary.Dictionary(symbols=list("abcdefg"))
         self.max_samples = 3
         self.max_tokens = 20
         self.num_labels = 10
@@ -225,7 +225,7 @@ class TestPaddedSequenceBatchIterator(TestCase):
 class TestBPTTBatchIterator(TestCase):
 
     def setUp(self):
-        self.dic = dictionary.Dictionary(symbols="abcdefg".split())
+        self.dic = dictionary.Dictionary(symbols=list("abcdefg"))
         self.batch_size = 3
         self.seq_length = 20
         self.data_size = self.seq_length * self.batch_size + 1
@@ -250,7 +250,7 @@ class TestBPTTBatchIterator(TestCase):
             self.assertLessEqual(x.shape[0], self.seq_length)
             self.assertEqual(x.shape[1], self.batch_size)
             # Check values
-            self.assertTrue(np.allclose(x[:-1], x[1:]))
+            self.assertTrue(np.allclose(y[:-1], x[1:]))
 
     def test_length(self):
         batched_dataset = self._dummy_classification_iterator()
@@ -269,19 +269,20 @@ class TestBPTTBatchIterator(TestCase):
 class TestSequencePairsBatchIterator(TestCase):
 
     def setUp(self):
-        self.src_dic = dictionary.Dictionary(symbols="abcdefg".split())
-        self.tgt_dic = dictionary.Dictionary(symbols="hijklmn".split())
+        self.src_dic = dictionary.Dictionary(symbols=list("abcdefg"))
+        self.tgt_dic = dictionary.Dictionary(symbols=list("hijklmn"))
         self.max_samples = 6
         self.max_tokens = 40
         self.data_size = self.max_tokens//2 + 1
+        max_size = self.data_size + 1
         self.src_data = [
             np.random.randint(low=self.src_dic.nspecials,
-                              high=len(self.src_dic), size=i)
-            for i in range(1, self.data_size + 1)
+                              high=len(self.src_dic), size=(i+3) % max_size)
+            for i in range(1, max_size)
         ]
         self.tgt_data = [
             np.random.randint(low=self.tgt_dic.nspecials,
-                              high=len(self.tgt_dic), size=i)
+                              high=len(self.tgt_dic), size=(i+5) % max_size)
             for i in range(1, self.data_size + 1)
         ]
 
@@ -363,6 +364,24 @@ class TestSequencePairsBatchIterator(TestCase):
         )
         # Check that the data is equal
         self.assertTrue(np.allclose(first_epoch_srcs, second_epoch_srcs))
+
+    def test_original_order(self):
+        # Now grouped by length
+        batched_dataset = self._dummy_iterator(shuffle=True, group_by_length="source")
+        # Labels in the prder that they are provided by the iterator
+        batches = [batch for batch in batched_dataset]
+        random_seqs = np.asarray([
+            w for _, tgt in batches
+            for y in tgt.sequences.T
+            for w in y if w != self.tgt_dic.pad_idx]).astype(int)
+        # Pointer to the original index
+        order = np.asarray([idx for _, tgt in batches for idx in tgt.original_idxs])
+        # Check that the given order is legit
+        ordered_seqs = np.asarray([
+            w for idx in order
+            for w in self.tgt_data[idx]
+            ]).astype(int)
+        self.assertListEqual(ordered_seqs.tolist(), random_seqs.tolist())
 
     def test_length(self):
         batched_dataset = self._dummy_iterator()
