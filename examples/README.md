@@ -47,5 +47,3 @@ On a GTX 1080 Ti GPU this runs in ~=1m per epoch (\~=42s with autobatching). The
 [`iwslt_att.py`](iwslt_att.py) implements an LSTM based encoder decoder model for translation French to English, trained on the [IWSLT16](https://sites.google.com/site/iwsltevaluation2016/mt-track) data.
 
 On a GTX 1080 Ti GPU this runs in ~=15m per epoch for 10 epochs and achieves a (lowercased) BLEU score of **32.72** on the `tst2014` test set.
-
-On a GTX 1080 Ti GPU this runs in ~=1m per epoch (\~=42s with autobatching). The test perplexity after 40 epochs is **84.78**

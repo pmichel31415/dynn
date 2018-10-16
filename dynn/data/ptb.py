@@ -41,7 +41,7 @@ def read_ptb(split, path, eos=None):
     Args:
         split (str): Either ``"train"``, ``"dev"`` or ``"test"``
         path (str): Path to the folder containing the
-            ``trainDevTestTrees_PTB.zip`` files
+            ``simple-examples.tar.gz`` file
         eos (str, optional): Optionally append an end of sentence token to
             each line
 
@@ -72,17 +72,16 @@ def load_ptb(path, eos=None):
 
     Args:
         path (str): Path to the folder containing the
-            ``trainDevTestTrees_PTB.zip`` file
+            ``simple-examples.tar.gz`` file
         eos (str, optional): Optionally append an end of sentence token to
             each line
 
 
     Returns:
-        tuple: train, valid and test sets (tuple of tree/labels tuples)
+        dict: dictionary mapping the split name to a list of strings
     """
-    splits = []
+    splits = {}
     for split in ["train", "valid", "test"]:
-        data = list(read_ptb(split, path, eos=eos))
-        splits.append(data)
+        splits[split] = list(read_ptb(split, path, eos=eos))
 
-    return tuple(splits)
+    return splits

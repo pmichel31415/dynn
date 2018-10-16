@@ -31,18 +31,17 @@ ptb.download_ptb("data")
 
 # Load the data
 print("Loading the PTB data")
-train, valid, test = ptb.load_ptb("data", eos="<eos>")
+data = ptb.load_ptb("data", eos="<eos>")
 
 # Learn the dictionary
 print("Building the dictionary")
-dic = Dictionary.from_data(train)
+dic = Dictionary.from_data(data["train"])
 dic.freeze()
+dic.save("ptb.dic")
 
 # Numberize the data
 print("Numberizing")
-train = dic.numberize(train)
-valid = dic.numberize(valid)
-test = dic.numberize(test)
+data = dic.numberize(data)
 
 # Model
 # =====
@@ -58,6 +57,7 @@ EMBED_DIM = 200
 HIDDEN_DIM = 200
 VOC_SIZE = len(dic)
 DROPOUT = 0.2
+N_EPOCHS = 40
 
 # Define the network as a custom layer
 
@@ -119,10 +119,10 @@ trainer.set_clip_threshold(CLIP_NORM)
 # Create the batch iterators
 print("Creating batch iterators")
 train_batches = BPTTBatchIterator(
-    train, batch_size=BATCH_SIZE, seq_length=BPTT_LENGTH
+    data["train"], batch_size=BATCH_SIZE, seq_length=BPTT_LENGTH
 )
-valid_batches = BPTTBatchIterator(valid, batch_size=1, seq_length=200)
-test_batches = BPTTBatchIterator(test, batch_size=1, seq_length=200)
+valid_batches = BPTTBatchIterator(data["valid"], batch_size=1, seq_length=200)
+test_batches = BPTTBatchIterator(data["test"], batch_size=1, seq_length=200)
 print(f"{len(train_batches)} training batches")
 
 
@@ -130,7 +130,7 @@ print(f"{len(train_batches)} training batches")
 print("Starting training")
 best_ppl = np.inf
 # Start training
-for epoch in range(40):
+for epoch in range(N_EPOCHS):
     # Time the epoch
     start_time = time.time()
     # This state will be passed around for truncated BPTT

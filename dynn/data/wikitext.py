@@ -68,7 +68,7 @@ def read_wikitext(split, path, name="2", eos=None):
                 yield sent
 
 
-def load_wikitext(path, eos=None):
+def load_wikitext(path, name="2", eos=None):
     """Loads the WikiText dataset
 
     Returns the train, validation test set, each as a list of sentences
@@ -77,6 +77,7 @@ def load_wikitext(path, eos=None):
     Args:
         path (str): Path to the folder containing the
             ``wikitext-{2|103}-v1.zip`` file
+        name (str): Either ``"2"`` or ``"103"``
         eos (str, optional): Optionally append an end of sentence token to
             each line
 
@@ -86,6 +87,6 @@ def load_wikitext(path, eos=None):
     """
     splits = {}
     for split in ["train", "valid", "test"]:
-        splits[split] = list(read_wikitext(split, path, eos=eos))
+        splits[split] = list(read_wikitext(split, path, name=name, eos=eos))
 
     return splits
