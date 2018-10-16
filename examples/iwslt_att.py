@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 import dynet as dy
+import sacrebleu
 
 import dynn
 from dynn.layers.dense_layers import Affine
@@ -35,13 +36,14 @@ VOC_SIZE = 30000
 LEARNING_RATE = 0.001
 LEARNING_RATE_DECAY = 2.0
 CLIP_NORM = 5.0
-BATCH_SIZE = 20
 N_LAYERS = 1
 EMBED_DIM = 256
 HIDDEN_DIM = 512
 DROPOUT = 0.2
 LABEL_SMOOTHING = 0.1
 N_EPOCHS = 10
+BEAM_SIZE = 4
+LENPEN = 1.0
 
 
 # Data
@@ -52,9 +54,7 @@ iwslt.download_iwslt("data", year="2016", langpair="fr-en")
 
 # Load the data
 print("Loading the IWSLT data")
-(
-    train, dev, test
-) = iwslt.load_iwslt("data", year="2016", langpair="fr-en", eos="<eos>")
+train, dev, test = iwslt.load_iwslt("data", year="2016", langpair="fr-en")
 print(f"{len(train[0])} training samples")
 print(f"{len(dev[0])} dev samples")
 print(f"{len(test[0])} test samples")
@@ -69,21 +69,20 @@ dic_src.freeze()
 dic_src.save("iwslt_att.dic.src")
 dic_tgt = Dictionary.from_data(train[1], max_size=VOC_SIZE)
 dic_tgt.freeze()
-dic_src.save("iwslt_att.dic.tgt")
+dic_tgt.save("iwslt_att.dic.tgt")
 
 # Numberize the data
 print("Numberizing")
 train_src, dev_src, test_src = dic_src.numberize([train[0], dev[0], test[0]])
-train_tgt, dev_tgt, test_tgt = dic_src.numberize([train[1], dev[1], test[1]])
+train_tgt, dev_tgt, test_tgt = dic_tgt.numberize([train[1], dev[1], test[1]])
 
 
 # Model
 # =====
 
-# Define the network as a custom layer
-
 
 class AttBiLSTM(object):
+    """This custom layer implements an attention BiLSTM model"""
 
     def __init__(self, nl, dx, dh):
         # Master parameter collection
@@ -245,8 +244,12 @@ class AttBiLSTM(object):
                             "is_over": False,
                         }
                     new_beams.append(new_beam)
+
+            def beam_score(beam):
+                """Helper to score a beam with length penalty"""
+                return beam["score"] / (len(beam["words"])+1)**LENPEN
             # Only keep topk new beams
-            beams = sorted(new_beams, key=lambda x: x["score"])[-beam_size:]
+            beams = sorted(new_beams, key=beam_score)[-beam_size:]
 
         # Return top beam
         return [beams[-1]["words"]], [beams[-1]["align"]]
@@ -321,8 +324,6 @@ for epoch in range(N_EPOCHS):
     print("=" * 20)
     # Validate
     nll = 0
-    # This state will be passed around for truncated BPTT
-    state_val = None
     for src, tgt in dev_batches:
         # Renew the computation graph
         dy.renew_cg()
@@ -400,7 +401,7 @@ def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
     return sacrebleu.corpus_bleu(hyps, [refs]).score
 
 # Dev set
-dev_bleu = eval_bleu(dev_batches, dev[0], dev[1], verbose=True)
+dev_bleu = eval_bleu(dev_batches, dev[0], dev[1])
 print(f"Dev BLEU: {dev_bleu:.2f}")
 # Test set
 test_bleu = eval_bleu(test_batches, test[0], test[1])
