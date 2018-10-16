@@ -16,23 +16,32 @@ EOS_TOKEN = "<eos>"
 class Dictionary(object):
 
     def __init__(self, symbols=None, special_symbols=None):
-        # Special symbols
-        self.symbols = [UNK_TOKEN, PAD_TOKEN, EOS_TOKEN]
-        self.unk_idx = self.symbols.index(UNK_TOKEN)
-        self.pad_idx = self.symbols.index(PAD_TOKEN)
-        self.eos_idx = self.symbols.index(EOS_TOKEN)
-        # Additional special tokens
+        # Frozen means you can't add symbols
+        self.frozen = False
+        # Symbols map ints to, well, symbols
+        self.symbols = []
+        # Indices does the reverse (symbol to int)
+        self.indices = {}
+        # UNK (for unknown words)
+        self.unk_idx = self.add(UNK_TOKEN)
+        self.unk_tok = UNK_TOKEN
+        # PAD (for padding)
+        self.pad_idx = self.add(PAD_TOKEN)
+        self.pad_tok = PAD_TOKEN
+        # EOS (End Of Sentence)
+        self.eos_idx = self.add(EOS_TOKEN)
+        self.eos_tok = EOS_TOKEN
+        # Additional special symbols
         if special_symbols is not None:
-            self.symbols.extend(special_symbols)
-        # Number of special tokens
+            for special_symbol in special_symbols:
+                self.add(special_symbol)
+        # Number of special symbols (easier to test for special symbols by
+        # just checking whether idx < nspecials)
         self.nspecials = len(self.symbols)
         # Add symbols
         if symbols is not None:
-            self.symbols.extend(symbols)
-        # Mapping from string to index:
-        self.indices = {word: idx for idx, word in enumerate(self.symbols)}
-        # Frozen means you can't add symbols
-        self.frozen = False
+            for symbol in symbols:
+                self.add(symbol)
 
     def __len__(self):
         return len(self.symbols)
@@ -204,4 +213,65 @@ class Dictionary(object):
         # Actually create dictionary
         dic = Dictionary(symbols=symbols, special_symbols=special_symbols)
 
+        return dic
+
+    def save(self, filename, symbols_only=False):
+        """Save the dictionary to a text file.
+
+        Args:
+            filename (str): Target filename.
+            symbols_only (bool, optional): Defaults to False. If set to
+                ``True``, only the symbols will be printed (and no header
+                information about the size, frozen status and number of
+                special symbols). Use this mostrly if you want to use the
+                dictionary for other purposes.
+        """
+
+        with open(filename, "w") as dic_file:
+            if not symbols_only:
+                header = f"{len(self)}\t{self.frozen}\t{self.nspecials}"
+                print(header, file=dic_file)
+            for symbol in self.symbols:
+                print(symbol, file=dic_file)
+
+    @staticmethod
+    def load(filename):
+        """Load the dictionary from a text file
+
+        The text file can just contain a list of one symbol per line.
+
+        Args:
+            filename (str): File to load the dictionary from
+
+        Returns:
+            Dictionary: Resulting dictionary
+        """
+
+        symbols = []
+        expected_size = None
+        frozen = True
+        nspecials = 0
+        with open(filename, "r") as dic_file:
+            maybe_header = dic_file.readline().strip()
+            if len(maybe_header.split("\t")) > 1:
+                expected_size, frozen, nspecials = maybe_header.split("\t")
+                expected_size = int(expected_size)
+                frozen = frozen is "True"
+                nspecials = int(nspecials)
+            else:
+                symbols.append(maybe_header)
+            # Continue iterating
+            for line in dic_file:
+                symbols.append(line.strip())
+        # check size
+        if expected_size is not None and len(symbols) != expected_size:
+            raise ValueError("Size mismatch in dictionary file")
+        # Create dictionary
+        special_symbols = symbols[:nspecials]
+        symbols = symbols[nspecials:]
+        dic = Dictionary(symbols=symbols, special_symbols=special_symbols)
+        # Freeze maybe
+        if frozen:
+            dic.freeze()
+        # Return
         return dic
