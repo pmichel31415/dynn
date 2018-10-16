@@ -20,7 +20,7 @@ def lowercase(data):
         list, str: Lowercased data
     """
 
-    if isinstance(data, list):
+    if isinstance(data, (list, tuple)):
         return [lowercase(item) for item in data]
     elif isinstance(data, str):
         return data.lower()
@@ -29,7 +29,7 @@ def lowercase(data):
 
 
 def _tokenize(data, tokenizer):
-    if isinstance(data, list):
+    if isinstance(data, (list, tuple)):
         return [_tokenize(item) for item in data]
     elif isinstance(data, str):
         return tokenizer(data)
@@ -77,8 +77,7 @@ def normalize(data):
     Returns:
         list,np.array: Normalized data
     """
-
-    if isinstance(data, list):
+    if isinstance(data, (list, tuple)):
         return [normalize(item) for item in data]
     elif isinstance(data, np.ndarray):
         mean = data.mean()

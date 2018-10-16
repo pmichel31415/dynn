@@ -27,6 +27,9 @@ def download_if_not_there(file, url, path, force=False, local_file=None):
     abs_path = os.path.abspath(path)
     local_file = local_file or file
     local_file_path = os.path.join(abs_path, local_file)
+    # Create dir if it doesn't exist
+    if not os.path.isdir(abs_path):
+        os.mkdir(abs_path)
     # Download if needed
     if force or not os.path.isfile(local_file_path):
         print(f"Downloading file {local_file} to folder {abs_path} from {url}")

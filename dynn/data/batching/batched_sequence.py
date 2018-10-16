@@ -37,9 +37,18 @@ class BatchedSequence(object):
         self.lengths = [len(seq) for seq in sequences]
         self.pad_idx = pad_idx
         self.left_aligned = left_aligned
+        self.unpadded_sequences = sequences
         self.sequences = self.collate(sequences)
         self.max_length = self.sequences.shape[0]
         self.batch_size = self.sequences.shape[1]
+
+    def __getitem__(self, index):
+        return BatchedSequence(
+            self.unpadded_sequences[index],
+            self.original_idxs[index],
+            self.pad_idx,
+            self.left_aligned,
+        )
 
     def get_mask(self, base_val=1, mask_val=0):
         """Return a mask expression with specific values for padding tokens.

@@ -76,6 +76,8 @@ class SequencePairsBatchIterator(object):
                 "{len(src_data)} != {len(tgt_data)}"
             )
         self.num_samples = len(src_data)
+        self.src_size = sum(len(src) for src in src_data)
+        self.tgt_size = sum(len(tgt) for tgt in tgt_data)
         # Main parameters
         self.max_samples = max_samples
         self.max_tokens = max_tokens
@@ -107,8 +109,7 @@ class SequencePairsBatchIterator(object):
         self.src_data = np.asarray([src_data[idx] for idx in initial_order])
         self.tgt_data = np.asarray([tgt_data[idx] for idx in initial_order])
         # Keep track of the original position of each sentence
-        self.original_position = np.arange(self.num_samples)
-        self.original_position[initial_order] = np.arange(self.num_samples)
+        self.original_position = initial_order
 
         # Initial position and order
         self.position = 0

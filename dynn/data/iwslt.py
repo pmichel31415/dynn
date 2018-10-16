@@ -10,6 +10,7 @@ import tarfile
 import re
 
 from .data_util import download_if_not_there
+from .dictionary import EOS_TOKEN
 
 iwslt_url = "https://wit3.fbk.eu/archive"
 supported = {
@@ -42,6 +43,9 @@ def download_iwslt(path=".", year="2016", langpair="de-en", force=False):
 
     Args:
         path (str, optional): Local folder (defaults to ".")
+        year (str, optional): IWSLT year (for now only 2016 is supported)
+        langpair (str, optional): ``src-tgt`` language pair (for now only
+            ``{de,fr}-en`` are supported)
         force (bool, optional): Force the redownload even if the files are
             already at ``path``
     """
@@ -61,14 +65,22 @@ def download_iwslt(path=".", year="2016", langpair="de-en", force=False):
         abs_filename = os.path.join(os.path.abspath(path), local_file)
         # Create target dir
         directory = local_dir(year, langpair)
-        if not os.path.isdir(directory):
-            os.mkdir(directory)
+        root_path = os.path.join(os.path.abspath(path), directory)
+        if not os.path.isdir(root_path):
+            os.mkdir(root_path)
         # Extract
         with tarfile.open(abs_filename) as tar:
-            tar.extractall(directory)
+            tar.extractall(root_path)
 
 
-def read_iwslt(split, path, year="2016", langpair="de-en", eos=None):
+def read_iwslt(
+    split,
+    path,
+    year="2016",
+    langpair="de-en",
+    src_eos=None,
+    tgt_eos=EOS_TOKEN
+):
     """Iterates over the IWSLT dataset
 
     Example:
@@ -81,12 +93,16 @@ def read_iwslt(split, path, year="2016", langpair="de-en", eos=None):
     Args:
         split (str): Either ``"train"``, ``"dev"`` or ``"test"``
         path (str): Path to the folder containing the ``.tgz`` file
-        eos (str, optional): Optionally append an end of sentence token to
-            each line
-
+        year (str, optional): IWSLT year (for now only 2016 is supported)
+        langpair (str, optional): ``src-tgt`` language pair (for now only
+            ``{de,fr}-en`` are supported)
+        src_eos (str, optional): Optionally append an end of sentence token to
+            each source line.
+        tgt_eos (str, optional): Optionally append an end of sentence token to
+            each target line.
 
     Returns:
-        tuple: tree, label
+        tuple: Source sentence, Target sentence
     """
     if not (split is "test" or split is "dev" or split is "train"):
         raise ValueError("split must be \"train\", \"dev\" or \"test\"")
@@ -123,9 +139,10 @@ def read_iwslt(split, path, year="2016", langpair="de-en", eos=None):
         src_l = src_l.strip().split()
         tgt_l = tgt_l.strip().split()
         # Append eos maybe
-        if eos is not None:
-            src_l.append(eos)
-            tgt_l.append(eos)
+        if src_eos is not None:
+            src_l.append(src_eos)
+        if tgt_eos is not None:
+            tgt_l.append(tgt_eos)
         # Return
         yield src_l, tgt_l
 
@@ -133,7 +150,13 @@ def read_iwslt(split, path, year="2016", langpair="de-en", eos=None):
     tgt_obj.close()
 
 
-def load_iwslt(path, year="2016", langpair="de-en", eos=None):
+def load_iwslt(
+    path,
+    year="2016",
+    langpair="de-en",
+    src_eos=None,
+    tgt_eos=EOS_TOKEN
+):
     """Loads the IWSLT dataset
 
     Returns the train, dev and test set, each as lists of source and target
@@ -141,8 +164,13 @@ def load_iwslt(path, year="2016", langpair="de-en", eos=None):
 
     Args:
         path (str): Path to the folder containing the ``.tgz`` file
-        eos (str, optional): Optionally append an end of sentence token to
-            each line
+        year (str, optional): IWSLT year (for now only 2016 is supported)
+        langpair (str, optional): ``src-tgt`` language pair (for now only
+            ``{de,fr}-en`` are supported)
+        src_eos (str, optional): Optionally append an end of sentence token to
+            each source line.
+        tgt_eos (str, optional): Optionally append an end of sentence token to
+            each target line.
 
 
     Returns:
@@ -160,7 +188,8 @@ def load_iwslt(path, year="2016", langpair="de-en", eos=None):
             path,
             year=year,
             langpair=langpair,
-            eos=eos
+            src_eos=src_eos,
+            tgt_eos=tgt_eos
         ))
         src_data = [src for src, _ in data]
         tgt_data = [tgt for _, tgt in data]
