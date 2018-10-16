@@ -120,6 +120,8 @@ class Dictionary(object):
         """
         if isinstance(data, str):
             return self.index(data)
+        if isinstance(data, dict):
+            return {k: self.numberize(v) for k, v in data.items()}
         else:
             return [self.numberize(item) for item in data]
 
