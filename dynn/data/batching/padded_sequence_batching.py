@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from .batched_sequence import BatchedSequence
+from .sequence_batch import SequenceBatch
 
 
 class PaddedSequenceBatchIterator(object):
@@ -29,7 +29,7 @@ class PaddedSequenceBatchIterator(object):
         )
         # Training loop
         for x, y in batched_dataset:
-            # x is a BatchedSequence object
+            # x is a SequenceBatch object
             # and y has shape (batch_size,)
             # Do something with x and y
 
@@ -104,7 +104,7 @@ class PaddedSequenceBatchIterator(object):
         a batch of sequences and the other is is a numpy array in Fortran
         layout (for more efficient input in dynet).
 
-        ``batch_data`` is a :py:class:`BatchedSequence` object
+        ``batch_data`` is a :py:class:`SequenceBatch` object
 
         Args:
             index (int, slice): Index or slice
@@ -112,7 +112,7 @@ class PaddedSequenceBatchIterator(object):
         Returns:
             tuple: ``batch_data, batch_target``
         """
-        batch_data = BatchedSequence(
+        batch_data = SequenceBatch(
             self.data[index],
             original_idxs=self.original_position[index],
             pad_idx=self.pad_idx,

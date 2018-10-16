@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from .padded_sequence_batching import BatchedSequence
+from .sequence_batch import SequenceBatch
 
 
 class SequencePairsBatchIterator(object):
@@ -35,7 +35,7 @@ class SequencePairsBatchIterator(object):
         )
         # Training loop
         for x, y in batched_dataset:
-            # x and y are BatchedSequence objects
+            # x and y are SequenceBatch objects
 
     Args:
         src_data (list): List of source sequences (list of int iterables)
@@ -132,7 +132,7 @@ class SequencePairsBatchIterator(object):
         """Returns the ``index`` th sample
 
         The result is a tuple ``src_batch, tgt_batch`` where each is a
-        ``batch_data`` is a :py:class:`BatchedSequence` object
+        ``batch_data`` is a :py:class:`SequenceBatch` object
 
         Args:
             index (int, slice): Index or slice
@@ -140,13 +140,13 @@ class SequencePairsBatchIterator(object):
         Returns:
             tuple: ``src_batch, tgt_batch``
         """
-        src_batch = BatchedSequence(
+        src_batch = SequenceBatch(
             self.src_data[index],
             original_idxs=self.original_position[index],
             pad_idx=self.src_pad_idx,
             left_aligned=self.src_left_aligned,
         )
-        tgt_batch = BatchedSequence(
+        tgt_batch = SequenceBatch(
             self.tgt_data[index],
             original_idxs=self.original_position[index],
             pad_idx=self.tgt_pad_idx,

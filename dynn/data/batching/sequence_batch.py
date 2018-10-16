@@ -6,7 +6,7 @@ import numpy as np
 from ...operations import seq_mask
 
 
-class BatchedSequence(object):
+class SequenceBatch(object):
     """Batched sequence object with padding
 
     This wraps a list of integer sequences into a nice array padded to the
@@ -28,14 +28,20 @@ class BatchedSequence(object):
             at the same position).
     """
 
-    def __init__(self, sequences, original_idxs, pad_idx, left_aligned=True):
+    def __init__(
+        self,
+        sequences,
+        original_idxs=None,
+        pad_idx=None,
+        left_aligned=True
+    ):
         if len(sequences) == 0:
             raise ValueError("Can't batch 0 sequences together")
         if not isinstance(sequences[0], Iterable):
             sequences = [sequences]
-        self.original_idxs = original_idxs
+        self.original_idxs = original_idxs or [0] * len(sequences)
         self.lengths = [len(seq) for seq in sequences]
-        self.pad_idx = pad_idx
+        self.pad_idx = pad_idx or 0
         self.left_aligned = left_aligned
         self.unpadded_sequences = sequences
         self.sequences = self.collate(sequences)
@@ -43,7 +49,7 @@ class BatchedSequence(object):
         self.batch_size = self.sequences.shape[1]
 
     def __getitem__(self, index):
-        return BatchedSequence(
+        return SequenceBatch(
             self.unpadded_sequences[index],
             self.original_idxs[index],
             self.pad_idx,
