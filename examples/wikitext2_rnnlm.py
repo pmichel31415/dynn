@@ -16,7 +16,7 @@ from dynn.layers.transduction_layers import (
 
 from dynn.parameter_initialization import UniformInit
 
-from dynn.data import ptb
+from dynn.data import wikitext
 from dynn.data.dictionary import Dictionary
 from dynn.data.batching import BPTTBatchIterator
 
@@ -27,22 +27,20 @@ dynn.set_random_seed(31415)
 # ====
 
 # Download SST
-ptb.download_ptb("data")
+wikitext.download_wikitext("data", name="2")
 
 # Load the data
-print("Loading the PTB data")
-train, valid, test = ptb.load_ptb("data", eos="<eos>")
+print("Loading the WikiText-2 data")
+wikitext2 = wikitext.load_wikitext("data", eos="<eos>")
 
 # Learn the dictionary
 print("Building the dictionary")
-dic = Dictionary.from_data(train)
+dic = Dictionary.from_data(wikitext2["train"])
 dic.freeze()
 
 # Numberize the data
 print("Numberizing")
-train = dic.numberize(train)
-valid = dic.numberize(valid)
-test = dic.numberize(test)
+wikitext2 = dic.numberize(wikitext2)
 
 # Model
 # =====
@@ -119,10 +117,12 @@ trainer.set_clip_threshold(CLIP_NORM)
 # Create the batch iterators
 print("Creating batch iterators")
 train_batches = BPTTBatchIterator(
-    train, batch_size=BATCH_SIZE, seq_length=BPTT_LENGTH
+    wikitext2["train"], batch_size=BATCH_SIZE, seq_length=BPTT_LENGTH
 )
-valid_batches = BPTTBatchIterator(valid, batch_size=1, seq_length=200)
-test_batches = BPTTBatchIterator(test, batch_size=1, seq_length=200)
+valid_batches = BPTTBatchIterator(
+    wikitext2["valid"], batch_size=1, seq_length=200)
+test_batches = BPTTBatchIterator(
+    wikitext2["test"], batch_size=1, seq_length=200)
 print(f"{len(train_batches)} training batches")
 
 
@@ -187,7 +187,7 @@ for epoch in range(40):
     # Early stopping
     if ppl < best_ppl:
         best_ppl = ppl
-        network.pc.save("ptb_rnnlm.model")
+        network.pc.save("wkitext2_rnnlm.model")
     else:
         print("Decreasing learning rate")
         trainer.learning_rate /= LEARNING_RATE_DECAY
@@ -198,7 +198,7 @@ for epoch in range(40):
 
 # Load model
 print("Reloading best model")
-network.pc.populate("ptb_rnnlm.model")
+network.pc.populate("wkitext2_rnnlm.model")
 
 # Test
 nll = 0
