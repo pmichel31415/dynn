@@ -4,6 +4,7 @@ from collections import Iterable
 import numpy as np
 
 from ...operations import seq_mask
+from ...util import _default_value
 
 
 class SequenceBatch(object):
@@ -39,9 +40,9 @@ class SequenceBatch(object):
             raise ValueError("Can't batch 0 sequences together")
         if not isinstance(sequences[0], Iterable):
             sequences = [sequences]
-        self.original_idxs = original_idxs or [0] * len(sequences)
+        self.original_idxs = _default_value(original_idxs, [0]*len(sequences))
         self.lengths = [len(seq) for seq in sequences]
-        self.pad_idx = pad_idx or 0
+        self.pad_idx = _default_value(pad_idx, 0)
         self.left_aligned = left_aligned
         self.unpadded_sequences = sequences
         self.sequences = self.collate(sequences)
