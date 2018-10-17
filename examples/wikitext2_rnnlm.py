@@ -10,6 +10,7 @@ import dynn
 from dynn.layers.dense_layers import Affine
 from dynn.layers.embedding_layers import Embeddings
 from dynn.layers.recurrent_layers import StackedLSTM
+from dynn.layers.combination_layers import Sequential
 from dynn.layers.transduction_layers import (
     Transduction, Unidirectional
 )
@@ -37,6 +38,7 @@ wikitext2 = wikitext.load_wikitext("data", eos="<eos>")
 print("Building the dictionary")
 dic = Dictionary.from_data(wikitext2["train"])
 dic.freeze()
+dic.save("wikitext2.dic")
 
 # Numberize the data
 print("Numberizing")
@@ -46,16 +48,17 @@ wikitext2 = dic.numberize(wikitext2)
 # =====
 
 # Hyper-parameters
-LEARNING_RATE = 20
-LEARNING_RATE_DECAY = 4.0
+LEARNING_RATE = 10
+LEARNING_RATE_DECAY = 2.0
 CLIP_NORM = 0.25
-BPTT_LENGTH = 35
-BATCH_SIZE = 20
+BPTT_LENGTH = 100
+BATCH_SIZE = 32
 N_LAYERS = 2
 EMBED_DIM = 200
-HIDDEN_DIM = 200
+HIDDEN_DIM = 600
 VOC_SIZE = len(dic)
 DROPOUT = 0.2
+N_EPOCHS = 20
 
 # Define the network as a custom layer
 
@@ -75,7 +78,10 @@ class RNNLM(object):
         self.lstm_cell = StackedLSTM(self.pc, nl, dx, dh, DROPOUT, DROPOUT)
         self.rnn = Unidirectional(self.lstm_cell)
         # Final projection layer
-        proj_layer = Affine(self.pc, dh, len(dic), dropout=DROPOUT, W_p=E)
+        proj_layer = Sequential(
+            Affine(self.pc, dh, dx),
+            Affine(self.pc, dx, len(dic), dropout=DROPOUT, W_p=E)
+        )
         self.project = Transduction(proj_layer)
 
     def init(self, test=False, update=True):
@@ -130,7 +136,7 @@ print(f"{len(train_batches)} training batches")
 print("Starting training")
 best_ppl = np.inf
 # Start training
-for epoch in range(40):
+for epoch in range(N_EPOCHS):
     # Time the epoch
     start_time = time.time()
     # This state will be passed around for truncated BPTT
@@ -187,7 +193,7 @@ for epoch in range(40):
     # Early stopping
     if ppl < best_ppl:
         best_ppl = ppl
-        network.pc.save("wkitext2_rnnlm.model")
+        dynn.io.save(network.pc, "wikitext2_rnnlm.model.npz")
     else:
         print("Decreasing learning rate")
         trainer.learning_rate /= LEARNING_RATE_DECAY
@@ -198,7 +204,7 @@ for epoch in range(40):
 
 # Load model
 print("Reloading best model")
-network.pc.populate("wkitext2_rnnlm.model")
+dynn.io.populate(network.pc, "wikitext2_rnnlm.model.npz")
 
 # Test
 nll = 0
