@@ -12,7 +12,7 @@ from . import operations
 from . import activations
 from . import parameter_initialization
 
-__version__ = "0.0.12"
+__version__ = "0.1"
 
 __all__ = [
     "layers",
