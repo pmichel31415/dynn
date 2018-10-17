@@ -8,6 +8,7 @@ install:
 - python setup.py install
 script:
 - pip install pytest==3.0.5
+- pip install numpy>=1.14.3
 - pytest
 deploy:
   provider: pypi
