@@ -229,7 +229,7 @@ class Dictionary(object):
                 dictionary for other purposes.
         """
 
-        with open(filename, "w") as dic_file:
+        with open(filename, "w", encoding="utf-8") as dic_file:
             if not symbols_only:
                 header = f"{len(self)}\t{self.frozen}\t{self.nspecials}"
                 print(header, file=dic_file)
@@ -253,7 +253,7 @@ class Dictionary(object):
         expected_size = None
         frozen = True
         nspecials = 0
-        with open(filename, "r") as dic_file:
+        with open(filename, "r", encoding="utf-8") as dic_file:
             maybe_header = dic_file.readline().strip()
             if len(maybe_header.split("\t")) > 1:
                 expected_size, frozen, nspecials = maybe_header.split("\t")
@@ -277,3 +277,6 @@ class Dictionary(object):
             dic.freeze()
         # Return
         return dic
+
+
+__all__ = ["Dictionary"]
