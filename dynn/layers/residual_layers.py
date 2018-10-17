@@ -10,7 +10,7 @@ from .base_layers import BaseLayer
 from .functional_layers import IdentityLayer
 
 
-class ResidualLayer(BaseLayer):
+class Residual(BaseLayer):
     """Adds residual connections to a layer"""
 
     def __init__(
@@ -20,7 +20,7 @@ class ResidualLayer(BaseLayer):
         layer_weight=1.0,
         shortcut_weight=1.0,
     ):
-        super(ResidualLayer, self).__init__("residual")
+        super(Residual, self).__init__("residual")
         self.layer = layer
         self.shortcut_transform = _default_value(
             shortcut_transform, IdentityLayer()

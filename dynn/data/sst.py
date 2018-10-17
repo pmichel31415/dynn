@@ -83,9 +83,8 @@ def read_sst(split, path, terminals_only=True, binary=False):
 def load_sst(path, terminals_only=True, binary=False):
     """Loads the SST dataset
 
-    Returns the train and test set, each as a list of images and a list
-    of labels. The images are represented as numpy arrays and the labels as
-    integers.
+    Returns the train, dev and test sets in a dictionary, each as a tuple of
+    containing the trees and the labels.
 
     Args:
         path (str): Path to the folder containing the
@@ -95,15 +94,16 @@ def load_sst(path, terminals_only=True, binary=False):
             Neutral lables are discarded
 
     Returns:
-        tuple: train, dev and test sets (tuple of tree/labels tuples)
+        dict: Dictionary containing the train, dev and test sets
+            (tuple of tree/labels tuples)
     """
-    splits = []
+    splits = {}
     for split in ["train", "dev", "test"]:
         data = list(
             read_sst(split, path, terminals_only=terminals_only, binary=binary)
         )
         trees = [tree for tree, _ in data]
         labels = [lbl for _, lbl in data]
-        splits.append([trees, labels])
+        splits[split] = (trees, labels)
 
-    return tuple(splits)
+    return splits

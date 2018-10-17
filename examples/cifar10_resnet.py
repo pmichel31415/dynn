@@ -5,16 +5,16 @@ import time
 
 import dynet as dy
 
-from dynn.layers.functional_layers import LambdaLayer
-from dynn.layers.dense_layers import Affine
-from dynn.layers.residual_layers import ResidualLayer
-from dynn.layers.convolution_layers import Conv2D
-from dynn.layers.flow_layers import FlattenLayer
-from dynn.layers.combination_layers import Sequential
+from dynn.layers import Lambda
+from dynn.layers import Affine
+from dynn.layers import Residual
+from dynn.layers import Conv2D
+from dynn.layers import Flatten
+from dynn.layers import Sequential
 from dynn.activations import relu, identity
 
 from dynn.data import cifar10
-from dynn.data.batching import NumpyBatchIterator
+from dynn.data.batching import NumpyBatches
 
 # For reproducibility
 dy.reset_random_seed(31415)
@@ -73,9 +73,9 @@ for n_res_block in range(4):
     # Full residual block
     res_block = Sequential(
         # Actual residual layer
-        ResidualLayer(block, shortcut_transform=shortcut),
+        Residual(block, shortcut_transform=shortcut),
         # Activation
-        LambdaLayer(relu),
+        Lambda(relu),
     )
     # Add the residual block to the list of res_layers
     res_layers.append(res_block)
@@ -87,7 +87,7 @@ residual_stack = Sequential(*res_layers)
 network = Sequential(
     residual_stack,
     # Flatten the resulting 3d tensor
-    FlattenLayer(),
+    Flatten(),
     # Final Multilayer perceptron
     Affine(pc, n_pixels * num_kernels, 128, activation=relu),
     Affine(pc, 128, 10, activation=identity, dropout=0.1)
@@ -106,8 +106,8 @@ cifar10.download_cifar10("data")
 (train_x, train_y), (test_x, test_y) = cifar10.load_cifar10("data")
 
 # Create the batch iterators
-train_batches = NumpyBatchIterator(train_x, train_y, batch_size=64)
-test_batches = NumpyBatchIterator(test_x, test_y, batch_size=64, shuffle=False)
+train_batches = NumpyBatches(train_x, train_y, batch_size=64)
+test_batches = NumpyBatches(test_x, test_y, batch_size=64, shuffle=False)
 
 # Training
 # ========

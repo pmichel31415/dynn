@@ -6,7 +6,7 @@ import numpy as np
 from .sequence_batch import SequenceBatch
 
 
-class PaddedSequenceBatchIterator(object):
+class PaddedSequenceBatches(object):
     """Wraps a list of sequences and a list of targets as a batch iterator.
 
     You can then iterate over this object and get tuples of
@@ -24,7 +24,7 @@ class PaddedSequenceBatchIterator(object):
         # Class labels
         labels = np.random.randint(10, size=1000)
         # Iterator with at most 20 samples or 50 tokens per batch
-        batched_dataset = PaddedSequenceBatchIterator(
+        batched_dataset = PaddedSequenceBatches(
             data, labels, max_samples=20
         )
         # Training loop

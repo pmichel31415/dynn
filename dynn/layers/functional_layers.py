@@ -42,12 +42,12 @@ class ConstantLayer(BaseLayer):
         return self.constant
 
 
-class LambdaLayer(BaseLayer):
+class Lambda(BaseLayer):
     """This layer applies an arbitrary function to its input.
 
     .. code-block:: python
 
-        LambdaLayer(f)(x) == f(x)
+        Lambda(f)(x) == f(x)
 
     This is useful if you want to wrap activation functions as layers. The
     unary operation should be a function taking :py:class:`dynet.Expression` to
@@ -65,7 +65,7 @@ class LambdaLayer(BaseLayer):
     """
 
     def __init__(self, function):
-        super(LambdaLayer, self).__init__(
+        super(Lambda, self).__init__(
             f"lambda_{function.__name__}"
         )
         self.function = function
@@ -75,7 +75,7 @@ class LambdaLayer(BaseLayer):
         return self.function(*args, **kwargs)
 
 
-class IdentityLayer(LambdaLayer):
+class IdentityLayer(Lambda):
     """The identity layer does literally nothing
 
     .. code-block:: python
@@ -101,7 +101,7 @@ class UnaryOpLayer(BaseLayer):
 
     .. code-block:: python
 
-        UnaryOpLayer(layer, op)(x) == Sequential(layer, LambdaLayer(op))
+        UnaryOpLayer(layer, op)(x) == Sequential(layer, Lambda(op))
 
     You shouldn't use this to stack layers though, ``op`` oughtn't be a layer.
     If you want to stack layers, use

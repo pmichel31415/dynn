@@ -61,7 +61,7 @@ class TestConstantLayer(TestCase):
         self.assertTrue(np.allclose(y.npvalue(), self.nparray))
 
 
-class TestLambdaLayer(TestCase):
+class TestLambda(TestCase):
 
     def setUp(self):
         self.functions = [
@@ -75,7 +75,7 @@ class TestLambdaLayer(TestCase):
         # Iterate over different functions
         for func in self.functions:
             # Lambda layer
-            lamb = functional_layers.LambdaLayer(func)
+            lamb = functional_layers.Lambda(func)
             # Iterate over different inputs
             for x_val in self.inputs:
                 # Initialize computation graph

@@ -3,7 +3,7 @@
 import numpy as np
 
 
-class NumpyBatchIterator(object):
+class NumpyBatches(object):
     """Wraps a list of numpy arrays and a list of targets as a batch iterator.
 
     You can then iterate over this object and get tuples of
@@ -18,7 +18,7 @@ class NumpyBatchIterator(object):
         # Class labels
         labels = np.random.randint(10, size=1000)
         # Iterator
-        batched_dataset = NumpyBatchIterator(data, labels, batch_size=20)
+        batched_dataset = NumpyBatches(data, labels, batch_size=20)
         # Training loop
         for x, y in batched_dataset:
             # x has shape (10, 20) while y has shape (20,)
@@ -34,7 +34,7 @@ class NumpyBatchIterator(object):
         # 5-dimensional outputs
         labels = np.random.uniform(size=(1000, 5))
         # Iterator
-        batched_dataset = NumpyBatchIterator(data, labels, batch_size=20)
+        batched_dataset = NumpyBatches(data, labels, batch_size=20)
         # Training loop
         for x, y in batched_dataset:
             # x has shape (10, 20) while y has shape (5, 20)

@@ -9,7 +9,7 @@ import dynet as dy
 from dynn.layers import attention_layers
 
 
-class TestMLPAttentionLayer(TestCase):
+class TestMLPAttention(TestCase):
 
     def setUp(self):
         self.pc = dy.ParameterCollection()
@@ -26,7 +26,7 @@ class TestMLPAttentionLayer(TestCase):
 
     def test_attend(self):
         # Create compact lstm
-        attend = attention_layers.MLPAttentionLayer(
+        attend = attention_layers.MLPAttention(
             self.pc,
             self.dq,
             self.dk,

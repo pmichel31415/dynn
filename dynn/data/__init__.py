@@ -12,6 +12,7 @@ Supported datasets are:
 - `SST <https://nlp.stanford.edu/sentiment/index.html>`_
 - `PTB <http://www.fit.vutbr.cz/~imikolov/rnnlm>`_
 """
+# Full module imports
 from . import (
     batching,
     preprocess,
@@ -19,9 +20,12 @@ from . import (
     cifar10,
     sst,
     ptb,
-    dictionary,
-    trees,
+    iwslt,
+    wikitext,
 )
+# Class imports
+from .dictionary import Dictionary
+from .trees import Tree
 
 __all__ = [
     "batching",
@@ -30,6 +34,8 @@ __all__ = [
     "cifar10",
     "sst",
     "ptb",
-    "dictionary",
-    "trees",
+    "iwslt",
+    "wikitext",
+    "Dictionary",
+    "Tree",
 ]

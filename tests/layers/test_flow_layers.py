@@ -7,7 +7,7 @@ import dynet as dy
 from dynn.layers import flow_layers
 
 
-class TestFlattenLayer(TestCase):
+class TestFlatten(TestCase):
 
     def setUp(self):
         self.shapes = [(2,), (2, 3), (2, 3, 4)]
@@ -15,7 +15,7 @@ class TestFlattenLayer(TestCase):
 
     def test_contiguous_values(self):
         # Create layer
-        flatten = flow_layers.FlattenLayer()
+        flatten = flow_layers.Flatten()
         # Try with varous shapes
         for shape in self.shapes:
             # Initialize computation graph

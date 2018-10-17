@@ -3,7 +3,7 @@
 import numpy as np
 
 
-class BPTTBatchIterator(object):
+class BPTTBatches(object):
     """Wraps a list of sequences as a contiguous batch iterator.
 
     This will iterate over batches of contiguous subsequences of size
@@ -17,7 +17,7 @@ class BPTTBatchIterator(object):
         # Sequence of length 1000
         data = np.random.randint(10, size=1000)
         # Iterator with over subsequences of length 20 with batch size 5
-        batched_dataset = BPTTBatchIterator(data, batch_size=5, seq_length=20)
+        batched_dataset = BPTTBatches(data, batch_size=5, seq_length=20)
         # Training loop
         for x, y in batched_dataset:
             # x has and y have shape (seq_length, batch_size)
