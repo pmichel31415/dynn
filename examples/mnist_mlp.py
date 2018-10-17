@@ -48,7 +48,9 @@ mnist.download_mnist("data")
 
 # Load the data
 print("Loading MNIST data")
-(train_x, train_y), (test_x, test_y) = mnist.load_mnist("data")
+data = mnist.load_mnist("data")
+train_x, train_y = data["train"]
+test_x, test_y = data["test"]
 
 print("Normalizing pixel values")
 train_x, test_x = preprocess.normalize([train_x, test_x])

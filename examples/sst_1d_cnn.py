@@ -29,11 +29,11 @@ sst.download_sst("data")
 
 # Load the data
 print("Loading the SST data")
-(
-    (train_x, train_y),
-    (dev_x, dev_y),
-    (test_x, test_y),
-) = sst.load_sst("data", terminals_only=True, binary=True)
+data = sst.load_sst("data", terminals_only=True, binary=True)
+train_x, train_y = data["train"]
+dev_x, dev_y = data["dev"]
+test_x, test_y = data["test"]
+
 
 # Lowercase
 print("Lowercasing")
@@ -71,6 +71,7 @@ EMBED_DIM = 300
 FILTERS = {1: 128, 2: 256, 3: 256}
 HIDDEN_DIM = sum(FILTERS.values())
 N_CLASSES = 2
+N_EPOCHS = 10
 
 # Master parameter collection
 pc = dy.ParameterCollection()
@@ -107,7 +108,7 @@ trainer = dy.MomentumSGDTrainer(pc, learning_rate=0.01, mom=0.9)
 # Start training
 print("Starting training")
 best_accuracy = 0
-for epoch in range(10):
+for epoch in range(N_EPOCHS):
     # Time the epoch
     start_time = time.time()
     for batch, y in train_batches:

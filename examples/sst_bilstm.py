@@ -28,11 +28,11 @@ sst.download_sst("data")
 
 # Load the data
 print("Loading the SST data")
-(
-    (train_x, train_y),
-    (dev_x, dev_y),
-    (test_x, test_y),
-) = sst.load_sst("data", terminals_only=True, binary=True)
+data = sst.load_sst("data", terminals_only=True, binary=True)
+train_x, train_y = data["train"]
+dev_x, dev_y = data["dev"]
+test_x, test_y = data["test"]
+
 
 # Lowercase
 print("Lowercasing")
@@ -70,6 +70,7 @@ EMBED_DIM = 100
 HIDDEN_DIM = 512
 N_CLASSES = 2
 DROPOUT = 0.5
+N_EPOCHS = 10
 
 # Define the network as a custom layer
 
@@ -90,14 +91,14 @@ class BiLSTM(object):
             output_only=True,
         )
         # Pooling layer
-        self.mean_pool = MeanPool1D()
+        self.pool = MeanPool1D()
         # Softmax layer
         self.softmax = Affine(self.pc, dh, N_CLASSES, dropout=DROPOUT)
 
     def init(self, test=False, update=True):
         self.embed.init(test=test, update=update)
         self.bilstm.init(test=test, update=update)
-        self.mean_pool.init(test=test, update=update)
+        self.pool.init(test=test, update=update)
         self.softmax.init(test=test, update=update)
 
     def __call__(self, batch):
@@ -107,7 +108,7 @@ class BiLSTM(object):
         fwd_H, bwd_H = self.bilstm(w_embeds, lengths=batch.lengths)
         H = [0.5 * (fh + bh) for fh, bh in zip(fwd_H, bwd_H)]
         # Mask and stack to a matrix
-        pooled_H = self.mean_pool(H, lengths=batch.lengths)
+        pooled_H = self.pool(H, lengths=batch.lengths)
         # Maxpool and get the logits
         logits = self.softmax(pooled_H)
         return logits
@@ -127,7 +128,7 @@ trainer = dy.AdamTrainer(network.pc, alpha=0.001)
 print("Starting training")
 best_accuracy = 0
 # Start training
-for epoch in range(10):
+for epoch in range(N_EPOCHS):
     # Time the epoch
     start_time = time.time()
     for batch, y in train_batches:
