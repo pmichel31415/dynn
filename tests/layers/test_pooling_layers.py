@@ -107,7 +107,7 @@ class TestMeanPool1DLayer(TestCase):
             print(f"- stride: {stride}")
             print(f"- kernel_size: {kernel_size}")
             print(f"- lengths: {lengths}")
-            pool1d = pooling_layers.MeanPooling1DLayer()
+            pool1d = pooling_layers.MeanPool1D()
             self._test_forward_backward(
                 pool1d, kernel_size=kernel_size, stride=stride, lengths=lengths
             )

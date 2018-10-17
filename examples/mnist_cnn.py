@@ -6,16 +6,16 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import Affine
-from dynn.layers.convolution_layers import Conv2D
-from dynn.layers.pooling_layers import MaxPool2D
-from dynn.layers.flow_layers import FlattenLayer
-from dynn.layers.combination_layers import Sequential, Parallel
+from dynn.layers import Affine
+from dynn.layers import Conv2D
+from dynn.layers import MaxPool2D
+from dynn.layers import Flatten
+from dynn.layers import Sequential, Parallel
 from dynn.activations import relu
 
 from dynn.data import mnist
 from dynn.data import preprocess
-from dynn.data.batching import NumpyBatchIterator
+from dynn.data.batching import NumpyBatches
 
 # For reproducibility
 dynn.set_random_seed(31415)
@@ -39,7 +39,7 @@ network = Sequential(
     Conv2D(pc, 32, 64, [5, 5], activation=relu),
     MaxPool2D(default_kernel_size=[2, 2], default_strides=[2, 2]),
     # Flatten the resulting 3d tensor
-    FlattenLayer(),
+    Flatten(),
     # Final Multilayer perceptron
     Affine(pc, 64*(28//4)**2, 128, activation=relu),
     Affine(pc, 128, 10, dropout=0.1)
@@ -63,8 +63,8 @@ train_x, test_x = preprocess.normalize([train_x, test_x])
 
 # Create the batch iterators
 print("Creating batches")
-train_batches = NumpyBatchIterator(train_x, train_y, batch_size=64)
-test_batches = NumpyBatchIterator(test_x, test_y, batch_size=64, shuffle=False)
+train_batches = NumpyBatches(train_x, train_y, batch_size=64)
+test_batches = NumpyBatches(test_x, test_y, batch_size=64, shuffle=False)
 
 # Training
 # ========

@@ -96,7 +96,7 @@ class MaxPool1D(BaseLayer):
         return output
 
 
-class MeanPooling1DLayer(BaseLayer):
+class MeanPool1D(BaseLayer):
     """1D mean pooling.
 
     The stride and kernel size arguments are here for consistency with
@@ -110,7 +110,7 @@ class MeanPooling1DLayer(BaseLayer):
     """
 
     def __init__(self, kernel_size=None, stride=1):
-        super(MeanPooling1DLayer, self).__init__("meanpool1d")
+        super(MeanPool1D, self).__init__("meanpool1d")
         if kernel_size is not None or stride != 1:
             raise NotImplementedError(
                 "MeanPooling1D doesn't support striding or kernel_size (yet)"

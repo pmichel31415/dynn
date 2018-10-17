@@ -13,7 +13,7 @@ from ..util import conditional_dropout
 from .base_layers import ParametrizedLayer
 
 
-class MLPAttentionLayer(ParametrizedLayer):
+class MLPAttention(ParametrizedLayer):
     """Multilayer Perceptron based attention
 
     Args:
@@ -36,7 +36,7 @@ class MLPAttentionLayer(ParametrizedLayer):
         activation=tanh,
         dropout=0.0,
     ):
-        super(MLPAttentionLayer, self).__init__(pc, "mlp-attention")
+        super(MLPAttention, self).__init__(pc, "mlp-attention")
         # Hyper-parameters
         self.key_dim = key_dim
         self.query_dim = query_dim
@@ -88,7 +88,7 @@ class MLPAttentionLayer(ParametrizedLayer):
         # Check that keys length == queries length
         L = keys.dim()[0][1]
         if L != values.dim()[0][1]:
-            raise ValueError("#keys != #values in MLPAttentionLayer")
+            raise ValueError("#keys != #values in MLPAttention")
         # Dropout
         query = conditional_dropout(query, self.dropout, not self.test)
         keys = conditional_dropout(keys, self.dropout, not self.test)
@@ -204,7 +204,7 @@ class BilinearAttention(ParametrizedLayer):
         # Check that keys length == queries length
         L = keys.dim()[0][1]
         if L != values.dim()[0][1]:
-            raise ValueError("#keys != #values in MLPAttentionLayer")
+            raise ValueError("#keys != #values in MLPAttention")
         # Dropout
         query = conditional_dropout(query, self.dropout, not self.test)
         keys = conditional_dropout(keys, self.dropout, not self.test)

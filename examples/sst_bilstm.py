@@ -6,18 +6,16 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import Affine
-from dynn.layers.embedding_layers import Embeddings
-from dynn.layers.pooling_layers import MeanPooling1DLayer
-from dynn.layers.recurrent_layers import LSTM
-from dynn.layers.transduction_layers import (
-    Transduction, Bidirectional
-)
+from dynn.layers import Affine
+from dynn.layers import Embeddings
+from dynn.layers import MeanPool1D
+from dynn.layers import LSTM
+from dynn.layers import Transduction, Bidirectional
 
 from dynn.data import sst
 from dynn.data import preprocess
 from dynn.data.dictionary import Dictionary
-from dynn.data.batching import PaddedSequenceBatchIterator
+from dynn.data.batching import PaddedSequenceBatches
 
 # For reproducibility
 dynn.set_random_seed(31415)
@@ -54,13 +52,13 @@ test_x = dic.numberize(test_x)
 
 # Create the batch iterators
 print("Creating batch iterators")
-train_batches = PaddedSequenceBatchIterator(
+train_batches = PaddedSequenceBatches(
     train_x, train_y, dic, max_samples=32, group_by_length=True
 )
-dev_batches = PaddedSequenceBatchIterator(
+dev_batches = PaddedSequenceBatches(
     dev_x, dev_y, dic, max_samples=32, shuffle=False
 )
-test_batches = PaddedSequenceBatchIterator(
+test_batches = PaddedSequenceBatches(
     test_x, test_y, dic, max_samples=32, shuffle=False
 )
 
@@ -92,7 +90,7 @@ class BiLSTM(object):
             output_only=True,
         )
         # Pooling layer
-        self.mean_pool = MeanPooling1DLayer()
+        self.mean_pool = MeanPool1D()
         # Softmax layer
         self.softmax = Affine(self.pc, dh, N_CLASSES, dropout=DROPOUT)
 

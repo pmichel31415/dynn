@@ -11,11 +11,11 @@ from dynn.layers import functional_layers
 from dynn.layers import residual_layers
 
 
-class TestResidualLayer(TestCase):
+class TestResidual(TestCase):
 
     def setUp(self):
-        self.layer = functional_layers.LambdaLayer(activations.tanh)
-        self.shortcut_transformation = functional_layers.LambdaLayer(
+        self.layer = functional_layers.Lambda(activations.tanh)
+        self.shortcut_transformation = functional_layers.Lambda(
             activations.sigmoid
         )
         self.layer_weight = 0.444
@@ -24,7 +24,7 @@ class TestResidualLayer(TestCase):
 
     def test_simple(self):
         # Create residual layer
-        residual = residual_layers.ResidualLayer(self.layer)
+        residual = residual_layers.Residual(self.layer)
         # Iterate over different inputs
         for x_val in self.inputs:
             # Initialize computation graph
@@ -40,7 +40,7 @@ class TestResidualLayer(TestCase):
 
     def test_shortcut_transformation(self):
         # Create residual layer
-        residual = residual_layers.ResidualLayer(
+        residual = residual_layers.Residual(
             self.layer,
             shortcut_transform=self.shortcut_transformation,
             layer_weight=self.layer_weight,

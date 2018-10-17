@@ -8,22 +8,20 @@ import dynet as dy
 import sacrebleu
 
 import dynn
-from dynn.layers.dense_layers import Affine
-from dynn.layers.embedding_layers import Embeddings
-from dynn.layers.recurrent_layers import StackedLSTM
-from dynn.layers.transduction_layers import (
-    Transduction, Bidirectional
-)
-from dynn.layers.attention_layers import MLPAttentionLayer
-from dynn.layers.combination_layers import Sequential
+from dynn.layers import Affine
+from dynn.layers import Embeddings
+from dynn.layers import StackedLSTM
+from dynn.layers import Transduction, Bidirectional
+from dynn.layers import MLPAttention
+from dynn.layers import Sequential
 
 from dynn.operations import stack
 from dynn.parameter_initialization import UniformInit
 
 from dynn.data import iwslt
 from dynn.data import preprocess
-from dynn.data.dictionary import Dictionary
-from dynn.data.batching import SequencePairsBatchIterator
+from dynn.data import Dictionary
+from dynn.data.batching import SequencePairsBatches
 
 # For reproducibility
 dynn.set_random_seed(31415)
@@ -100,7 +98,7 @@ class AttBiLSTM(object):
         self.bilstm = Bidirectional(self.enc_fwd, self.enc_bwd)
         # Attention
         # --------
-        self.attend = MLPAttentionLayer(self.pc, dh+dx, dh, dh)
+        self.attend = MLPAttention(self.pc, dh+dx, dh, dh)
         # Decoder
         # -------
         # Target word embeddings
@@ -269,13 +267,13 @@ trainer.set_clip_threshold(CLIP_NORM)
 
 # Create the batch iterators
 print("Creating batch iterators")
-train_batches = SequencePairsBatchIterator(
+train_batches = SequencePairsBatches(
     train_src, train_tgt, dic_src, dic_tgt, max_samples=64, max_tokens=2000,
 )
-dev_batches = SequencePairsBatchIterator(
+dev_batches = SequencePairsBatches(
     dev_src, dev_tgt, dic_src, dic_tgt, max_samples=10
 )
-test_batches = SequencePairsBatchIterator(
+test_batches = SequencePairsBatches(
     test_src, test_tgt, dic_src, dic_tgt, max_samples=10
 )
 print(f"{len(train_batches)} training batches")
@@ -304,7 +302,8 @@ for epoch in range(N_EPOCHS):
         # Mask losses and reduce
         masked_nll = - stack(lls, d=-1) * tgt.get_mask()
         # Rescale by inverse length
-        masked_nll = dy.cdiv(masked_nll, dy.inputTensor(tgt.lengths,batched=True))
+        masked_nll = dy.cdiv(
+            masked_nll, dy.inputTensor(tgt.lengths, batched=True))
         # Reduce losses
         nll = dy.mean_batches(masked_nll)
         # Backward pass
@@ -399,6 +398,7 @@ def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
             refs.append(ref_sent)
     # BLEU
     return sacrebleu.corpus_bleu(hyps, [refs]).score
+
 
 # Dev set
 dev_bleu = eval_bleu(dev_batches, dev[0], dev[1])

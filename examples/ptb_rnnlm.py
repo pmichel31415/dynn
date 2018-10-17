@@ -7,18 +7,16 @@ import numpy as np
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import Affine
-from dynn.layers.embedding_layers import Embeddings
-from dynn.layers.recurrent_layers import StackedLSTM
-from dynn.layers.transduction_layers import (
-    Transduction, Unidirectional
-)
+from dynn.layers import Affine
+from dynn.layers import Embeddings
+from dynn.layers import StackedLSTM
+from dynn.layers import Transduction, Unidirectional
 
 from dynn.parameter_initialization import UniformInit
 
 from dynn.data import ptb
 from dynn.data.dictionary import Dictionary
-from dynn.data.batching import BPTTBatchIterator
+from dynn.data.batching import BPTTBatches
 
 # For reproducibility
 dynn.set_random_seed(31415)
@@ -118,11 +116,11 @@ trainer.set_clip_threshold(CLIP_NORM)
 
 # Create the batch iterators
 print("Creating batch iterators")
-train_batches = BPTTBatchIterator(
+train_batches = BPTTBatches(
     data["train"], batch_size=BATCH_SIZE, seq_length=BPTT_LENGTH
 )
-valid_batches = BPTTBatchIterator(data["valid"], batch_size=1, seq_length=200)
-test_batches = BPTTBatchIterator(data["test"], batch_size=1, seq_length=200)
+valid_batches = BPTTBatches(data["valid"], batch_size=1, seq_length=200)
+test_batches = BPTTBatches(data["test"], batch_size=1, seq_length=200)
 print(f"{len(train_batches)} training batches")
 
 

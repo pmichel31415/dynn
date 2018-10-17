@@ -6,14 +6,14 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import Affine
-from dynn.layers.combination_layers import Sequential
-from dynn.layers.flow_layers import FlattenLayer
+from dynn.layers import Affine
+from dynn.layers import Sequential
+from dynn.layers import Flatten
 from dynn.activations import relu
 
 from dynn.data import mnist
 from dynn.data import preprocess
-from dynn.data.batching import NumpyBatchIterator
+from dynn.data.batching import NumpyBatches
 
 # For reproducibility
 dynn.set_random_seed(31415)
@@ -30,7 +30,7 @@ pc = dy.ParameterCollection()
 # Network
 network = Sequential(
     # Flatten 28 x 28 x 1 image to a vector
-    FlattenLayer(),
+    Flatten(),
     # Add all them layers
     Affine(pc, 28**2, HIDDEN_DIM, activation=relu),
     Affine(pc, HIDDEN_DIM, HIDDEN_DIM, activation=relu),
@@ -55,8 +55,8 @@ train_x, test_x = preprocess.normalize([train_x, test_x])
 
 # Create the batch iterators
 print("Creating batches")
-train_batches = NumpyBatchIterator(train_x, train_y, batch_size=64)
-test_batches = NumpyBatchIterator(test_x, test_y, batch_size=64, shuffle=False)
+train_batches = NumpyBatches(train_x, train_y, batch_size=64)
+test_batches = NumpyBatches(test_x, test_y, batch_size=64, shuffle=False)
 
 # Training
 # ========

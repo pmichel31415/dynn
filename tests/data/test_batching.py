@@ -8,7 +8,7 @@ import numpy as np
 from dynn.data import batching, dictionary
 
 
-class TestNumpyBatchIterator(TestCase):
+class TestNumpyBatches(TestCase):
 
     def setUp(self):
         self.input_dim = 3
@@ -23,7 +23,7 @@ class TestNumpyBatchIterator(TestCase):
         # Create targets
         labels = np.random.randint(self.num_labels, size=self.data_size)
         # Iterator
-        return batching.NumpyBatchIterator(
+        return batching.NumpyBatches(
             data, labels, batch_size=self.batch_size, shuffle=shuffle
         )
 
@@ -33,7 +33,7 @@ class TestNumpyBatchIterator(TestCase):
         # Create targets
         labels = np.random.uniform(size=(self.data_size, self.output_dim))
         # Iterator
-        return batching.NumpyBatchIterator(
+        return batching.NumpyBatches(
             data, labels, batch_size=self.batch_size
         )
 
@@ -95,7 +95,7 @@ class TestNumpyBatchIterator(TestCase):
         batched_dataset[::-1]
 
 
-class TestPaddedSequenceBatchIterator(TestCase):
+class TestPaddedSequenceBatches(TestCase):
 
     def setUp(self):
         self.dic = dictionary.Dictionary(symbols=list("abcdefg"))
@@ -118,7 +118,7 @@ class TestPaddedSequenceBatchIterator(TestCase):
         # Create targets
         labels = np.random.randint(self.num_labels, size=self.data_size)
         # Iterator
-        return batching.PaddedSequenceBatchIterator(
+        return batching.PaddedSequenceBatches(
             self.data,
             labels,
             self.dic,
@@ -132,7 +132,7 @@ class TestPaddedSequenceBatchIterator(TestCase):
         # Create targets
         targets = np.random.uniform(size=(self.data_size, self.output_dim))
         # Iterator
-        return batching.PaddedSequenceBatchIterator(
+        return batching.PaddedSequenceBatches(
             self.data,
             targets,
             self.dic,
@@ -222,7 +222,7 @@ class TestPaddedSequenceBatchIterator(TestCase):
         batched_dataset[::-1]
 
 
-class TestBPTTBatchIterator(TestCase):
+class TestBPTTBatches(TestCase):
 
     def setUp(self):
         self.dic = dictionary.Dictionary(symbols=list("abcdefg"))
@@ -235,7 +235,7 @@ class TestBPTTBatchIterator(TestCase):
 
     def _dummy_classification_iterator(self):
         # Iterator
-        return batching.BPTTBatchIterator(
+        return batching.BPTTBatches(
             self.data,
             batch_size=self.batch_size,
             seq_length=self.seq_length,
@@ -266,7 +266,7 @@ class TestBPTTBatchIterator(TestCase):
         batched_dataset[::-1]
 
 
-class TestSequencePairsBatchIterator(TestCase):
+class TestSequencePairsBatches(TestCase):
 
     def setUp(self):
         self.src_dic = dictionary.Dictionary(symbols=list("abcdefg"))
@@ -292,7 +292,7 @@ class TestSequencePairsBatchIterator(TestCase):
         group_by_length=None,
     ):
         # Iterator
-        return batching.SequencePairsBatchIterator(
+        return batching.SequencePairsBatches(
             self.src_data,
             self.tgt_data,
             self.src_dic,
@@ -367,7 +367,8 @@ class TestSequencePairsBatchIterator(TestCase):
 
     def test_original_order(self):
         # Now grouped by length
-        batched_dataset = self._dummy_iterator(shuffle=True, group_by_length="source")
+        batched_dataset = self._dummy_iterator(
+            shuffle=True, group_by_length="source")
         # Labels in the prder that they are provided by the iterator
         batches = [batch for batch in batched_dataset]
         random_seqs = np.asarray([
@@ -375,12 +376,13 @@ class TestSequencePairsBatchIterator(TestCase):
             for y in tgt.sequences.T
             for w in y if w != self.tgt_dic.pad_idx]).astype(int)
         # Pointer to the original index
-        order = np.asarray([idx for _, tgt in batches for idx in tgt.original_idxs])
+        order = np.asarray(
+            [idx for _, tgt in batches for idx in tgt.original_idxs])
         # Check that the given order is legit
         ordered_seqs = np.asarray([
             w for idx in order
             for w in self.tgt_data[idx]
-            ]).astype(int)
+        ]).astype(int)
         self.assertListEqual(ordered_seqs.tolist(), random_seqs.tolist())
 
     def test_length(self):

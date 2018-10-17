@@ -17,32 +17,44 @@ used like this:
     # Apply layer forward pass
     y = layer(x)
 """
-from . import (
-    base_layers,
-    functional_layers,
-    dense_layers,
-    embedding_layers,
-    residual_layers,
-    recurrent_layers,
-    transduction_layers,
-    pooling_layers,
-    convolution_layers,
-    flow_layers,
-    normalization_layers,
-    combination_layers,
+from .base_layers import BaseLayer, ParametrizedLayer
+
+from .functional_layers import Lambda
+from .dense_layers import Affine
+from .embedding_layers import Embeddings
+from .residual_layers import Residual
+from .recurrent_layers import (
+    RecurrentCell, StackedRecurrentCells, ElmanRNN, LSTM, StackedLSTM
 )
+from .transduction_layers import Transduction, Unidirectional, Bidirectional
+from .pooling_layers import MaxPool1D, MaxPool2D, MeanPool1D
+from .convolution_layers import Conv1D, Conv2D
+from .flow_layers import Flatten
+from .normalization_layers import LayerNormalization
+from .combination_layers import Sequential, Parallel
 
 __all__ = [
-    "base_layers",
-    "functional_layers",
-    "dense_layers",
-    "embedding_layers",
-    "residual_layers",
-    "recurrent_layers",
-    "transduction_layers",
-    "pooling_layers",
-    "convolution_layers",
-    "flow_layers",
-    "normalization_layers",
-    "combination_layers",
+    "BaseLayer",
+    "ParametrizedLayer",
+    "Lambda",
+    "Affine",
+    "Embeddings",
+    "Residual",
+    "RecurrentCell",
+    "StackedRecurrentCells",
+    "ElmanRNN",
+    "LSTM",
+    "StackedLSTM",
+    "Transduction",
+    "Unidirectional",
+    "Bidirectional",
+    "MaxPool1D",
+    "MaxPool2D",
+    "MeanPool1D",
+    "Conv1D",
+    "Conv2D",
+    "Flatten",
+    "LayerNormalization",
+    "Sequential",
+    "Parallel",
 ]

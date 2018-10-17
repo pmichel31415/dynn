@@ -6,7 +6,7 @@ import numpy as np
 from .sequence_batch import SequenceBatch
 
 
-class SequencePairsBatchIterator(object):
+class SequencePairsBatches(object):
     """Wraps two lists of sequences as a batch iterator.
 
     This is useful for sequence-to-sequence problems or sentence pairs
@@ -30,7 +30,7 @@ class SequencePairsBatchIterator(object):
         tgt_data = [np.random.randint(len(dic), size=np.random.randint(10))
                     for _ in range(1000)]
         # Iterator with at most 20 samples or 50 tokens per batch
-        batched_dataset = SequencePairsBatchIterator(
+        batched_dataset = SequencePairsBatches(
             src_data, tgt_data, max_samples=20
         )
         # Training loop

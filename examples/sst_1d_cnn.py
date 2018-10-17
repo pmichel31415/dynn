@@ -6,17 +6,17 @@ import time
 import dynet as dy
 
 import dynn
-from dynn.layers.dense_layers import Affine
-from dynn.layers.embedding_layers import Embeddings
-from dynn.layers.convolution_layers import Conv1D
-from dynn.layers.pooling_layers import MaxPool1D
-from dynn.layers.combination_layers import Sequential, Parallel
+from dynn.layers import Affine
+from dynn.layers import Embeddings
+from dynn.layers import Conv1D
+from dynn.layers import MaxPool1D
+from dynn.layers import Sequential, Parallel
 from dynn.activations import relu
 
 from dynn.data import sst
 from dynn.data import preprocess
 from dynn.data.dictionary import Dictionary
-from dynn.data.batching import PaddedSequenceBatchIterator
+from dynn.data.batching import PaddedSequenceBatches
 
 # For reproducibility
 dynn.set_random_seed(31415)
@@ -53,13 +53,13 @@ test_x = dic.numberize(test_x)
 
 # Create the batch iterators
 print("Creating batch iterators")
-train_batches = PaddedSequenceBatchIterator(
+train_batches = PaddedSequenceBatches(
     train_x, train_y, dic, max_samples=64, group_by_length=True
 )
-dev_batches = PaddedSequenceBatchIterator(
+dev_batches = PaddedSequenceBatches(
     dev_x, dev_y, dic, max_samples=32, shuffle=False
 )
-test_batches = PaddedSequenceBatchIterator(
+test_batches = PaddedSequenceBatches(
     test_x, test_y, dic, max_samples=32, shuffle=False
 )
 

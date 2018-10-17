@@ -11,7 +11,7 @@ import dynet as dy
 from .base_layers import BaseLayer
 
 
-class FlattenLayer(BaseLayer):
+class Flatten(BaseLayer):
     """Flattens the output such that there is only one dimension left
     (batch dimension notwithstanding)
 
@@ -20,7 +20,7 @@ class FlattenLayer(BaseLayer):
     .. code-block:: python
 
         # Create the layer
-        flatten = FlattenLayer()
+        flatten = Flatten()
         # Dummy batched 2d input
         x = dy.zeros((3, 4), batch_size=7)
         # x.dim() -> (3, 4), 7
@@ -31,7 +31,7 @@ class FlattenLayer(BaseLayer):
     """
 
     def __init__(self):
-        super(FlattenLayer, self).__init__("flatten")
+        super(Flatten, self).__init__("flatten")
 
     def __call__(self, x):
         """Flattens the output such that there is only one dimension left
