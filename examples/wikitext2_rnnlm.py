@@ -58,7 +58,7 @@ EMBED_DIM = 200
 HIDDEN_DIM = 600
 VOC_SIZE = len(dic)
 DROPOUT = 0.2
-N_EPOCHS = 20
+N_EPOCHS = 50
 
 # Define the network as a custom layer
 
