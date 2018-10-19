@@ -232,9 +232,9 @@ class StackedTransformers(Sequential):
             outputs = outputs[0]
         # Return
         if return_last_only:
-            return outputs[-1]
+            return tuple(output[-1] for output in outputs)
         else:
-            return outputs[1:]
+            return tuple(output[:1] for output in outputs)
 
 
 class CondTransformer(ParametrizedLayer):
@@ -495,6 +495,6 @@ class StackedCondTransformers(Sequential):
             outputs = outputs[0]
         # Return
         if return_last_only:
-            return outputs[-1]
+            return tuple(output[-1] for output in outputs)
         else:
-            return outputs[1:]
+            return tuple(output[:1] for output in outputs)

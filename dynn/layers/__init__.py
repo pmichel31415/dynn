@@ -35,6 +35,10 @@ from .convolution_layers import Conv1D, Conv2D
 from .flow_layers import Flatten
 from .normalization_layers import LayerNorm
 from .combination_layers import Sequential, Parallel
+from .transformer_layers import (
+    Transformer, StackedTransformers, CondTransformer, StackedCondTransformers
+)
+
 
 __all__ = [
     "BaseLayer",
@@ -63,4 +67,8 @@ __all__ = [
     "LayerNorm",
     "Sequential",
     "Parallel",
+    "Transformer",
+    "StackedTransformers",
+    "CondTransformer",
+    "StackedCondTransformers"
 ]
