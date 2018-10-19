@@ -28,9 +28,12 @@ from .recurrent_layers import (
 )
 from .transduction_layers import Transduction, Unidirectional, Bidirectional
 from .pooling_layers import MaxPool1D, MaxPool2D, MeanPool1D
+from .attention_layers import (
+    MLPAttention, BilinearAttention, MultiHeadAttention
+)
 from .convolution_layers import Conv1D, Conv2D
 from .flow_layers import Flatten
-from .normalization_layers import LayerNormalization
+from .normalization_layers import LayerNorm
 from .combination_layers import Sequential, Parallel
 
 __all__ = [
@@ -51,10 +54,13 @@ __all__ = [
     "MaxPool1D",
     "MaxPool2D",
     "MeanPool1D",
+    "MLPAttention",
+    "BilinearAttention",
+    "MultiHeadAttention",
     "Conv1D",
     "Conv2D",
     "Flatten",
-    "LayerNormalization",
+    "LayerNorm",
     "Sequential",
     "Parallel",
 ]
