@@ -71,7 +71,38 @@ def conditional_dropout(x, dropout_rate, flag):
         return x
 
 
+def sin_embeddings(length, dim, transposed=False):
+    """Returns sinusoidal position encodings.
+
+    As described in `Vaswani et al. (2017) <https://arxiv.org/abs/1706.03762>`_
+
+    Specifically this return a ``length x dim`` matrix :math:`PE` such that
+    :math:`PE[p, 2i]=\sin(\\frac{p}/{1000^{\\frac{2i}{dim}}})` and
+    :math:`PE[p, 2i+1]=\cos(\\frac{p}/{1000^{\\frac{2i}{dim}}})`
+
+    Args:
+        length (int): Length
+        dim (int): Dimension of the embeddings
+    """
+    # Scale for each dimension
+    dim_scale = 2 * np.floor_divide(np.arange(dim), 2) / dim
+    dim_scale = np.float_power(10000.0, dim_scale).reshape(1, -1)
+    # Phase to change sine to cosine every other dim
+    phase = np.zeros((1, dim))
+    phase[0, 1::2] = np.pi / 2
+    # Position value
+    pos = np.arange(length).reshape(-1, 1)
+    # Embeddings
+    embeds = np.sin(pos / dim_scale + phase)
+    # Return
+    if transposed:
+        return embeds.T
+    else:
+        return embeds
+
 # Masking
+
+
 def apply_mask(x, m, val):
     return dy.cmult(x, m) + val
 

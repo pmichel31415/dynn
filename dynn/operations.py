@@ -12,7 +12,7 @@ import dynet as dy
 
 
 def squeeze(x, d=0):
-    """Removes a dimension of size 1 at the given position
+    """Removes a dimension of size 1 at the given position.
 
     Example:
 

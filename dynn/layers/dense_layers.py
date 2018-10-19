@@ -66,7 +66,7 @@ class Affine(ParametrizedLayer):
         self.test = test
 
     def __call__(self, x):
-        """Forward pass
+        """Forward pass.
 
         Args:
             x (:py:class:`dynet.Expression`): Input expression (a vector)

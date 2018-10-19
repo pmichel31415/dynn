@@ -55,6 +55,18 @@ class TestUtil(TestCase):
             dy.inputTensor([[[[0]]]])
         )
 
+    def test_sin_embeddings(self):
+        L, dim = 10, 7
+        PE = util.sin_embeddings(L, dim)
+        for pos in range(L):
+            for d in range(dim):
+                i = d//2
+                if d % 2 == 0:
+                    expected = np.sin(pos / np.power(10000, (2 * i) / dim))
+                else:
+                    expected = np.cos(pos / np.power(10000, (2 * i) / dim))
+                self.assertAlmostEqual(PE[pos, d], expected)
+
     def test_conditional_dropout(self):
         dy.renew_cg()
         x = dy.random_uniform(100, 0, 1)
