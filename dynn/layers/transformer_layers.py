@@ -24,12 +24,10 @@ class TransformerLayer(ParametrizedLayer):
     Args:
         pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
             hold the parameters
-        query_dim (int): Queries dimension
-        key_dim (int): Keys dimension
-        hidden_dim (int): Hidden dimension of the MLP
-        activation (function, optional): MLP activation (defaults to tanh).
-        dropout (float, optional): Attention dropout (defaults to 0)
-
+        hidden_dim (int): Hidden dimension (used everywhere)
+        n_heads (int): Number of heads for self attention.
+        activation (function, optional): MLP activation (defaults to relu).
+        dropout (float, optional): Dropout rate (defaults to 0)
     """
 
     def __init__(
@@ -79,7 +77,7 @@ class TransformerLayer(ParametrizedLayer):
         length dimension.
 
         Args:
-            x (::): [description]
+            x (:py:class:`dynet.Expression`): Input (dimensions ``d x L``)
             lengths (list, optional): Defaults to None. List of lengths for
                 masking (used for attention)
             left_aligned (bool, optional): Defaults to True. USed for masking
@@ -121,6 +119,17 @@ class TransformerLayer(ParametrizedLayer):
 
 
 class StackedTransformerLayers(Sequential):
+    """Multilayer transformer.
+
+    Args:
+        pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
+            hold the parameters
+        n_layers (int): Number of layers
+        hidden_dim (int): Hidden dimension (used everywhere)
+        n_heads (int): Number of heads for self attention.
+        activation (function, optional): MLP activation (defaults to relu).
+        dropout (float, optional): Dropout rate (defaults to 0)
+    """
 
     def __init__(
         self,
@@ -148,6 +157,28 @@ class StackedTransformerLayers(Sequential):
         return_att=False,
         return_last_only=True,
     ):
+        """Run the multilayer transformer.
+
+        The input is expected to have dimensions ``d x L`` where ``L`` is the
+        length dimension.
+
+        Args:
+            x (:py:class:`dynet.Expression`): Input (dimensions ``d x L``)
+            lengths (list, optional): Defaults to None. List of lengths for
+                masking (used for attention)
+            left_aligned (bool, optional): Defaults to True. USed for masking
+            mask (:py:class:`dynet.Expression`, optional): Defaults to None.
+                As an alternative to ``length``, you can pass a mask
+                expression directly (useful to reuse masks accross layers)
+            return_att (bool, optional): Defaults to False. Return the self
+                attention weights
+            return_last_only (bool, optional): Return only the output of the
+                last layer (as opposed to the output of all layers).
+
+        Returns:
+            tuple, :py:class:`dynet.Expression`: The output expression (+ the
+                attention weights if ``return_att`` is ``True``)
+        """
         # Input has shape (d, L), B
         if len(x.dim()[0]) == 1:
             x = unsqueeze(x, d=-1)

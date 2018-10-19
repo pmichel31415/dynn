@@ -22,7 +22,7 @@ class Sequential(BaseLayer):
             layers are compatible (eg. the output of each layer can be
             fed into the next one)
         default_return_last_only (bool, optional): Return only the output
-        of the last layer (as opposed to the output of all layers).
+            of the last layer (as opposed to the output of all layers).
     """
 
     def __init__(self, *layers, default_return_last_only=True):
