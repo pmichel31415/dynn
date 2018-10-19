@@ -78,12 +78,11 @@ class Affine(ParametrizedLayer):
         x = conditional_dropout(x, self.dropout, not self.test)
         # Output
         if self.nobias:
-            self.h = self.W * x
+            h = self.W * x
         else:
-            self.h = dy.affine_transform([self.b, self.W, x])
-
+            h = dy.affine_transform([self.b, self.W, x])
         # Final output
-        return self.activation(self.h)
+        return self.activation(h)
 
 
 class GatedLayer(ParametrizedLayer):
