@@ -62,15 +62,25 @@ def unsqueeze(x, d=0):
 
     """
     dim, batch_size = x.dim()
-    if d < 0:
-        d += len(dim)+1
-    if d < 0 or d > len(dim):
-        raise ValueError(
-            f"Cannot insert dimension at position {d} out of bounds "
-            f"for {len(dim)}-dimensional expression"
-        )
+    # Convert to list if needed
+    if not isinstance(d, list):
+        d = [d]
+    # Check all dims
+    for i in range(len(d)):
+        if d[i] < 0:
+            d[i] += len(dim)+1
+        if d[i] < 0 or d[i] > len(dim):
+            raise ValueError(
+                f"Cannot insert dimension at position {d[i]} out of bounds "
+                f"for {len(dim)}-dimensional expression"
+            )
+    # Sort in descending order
+    d = sorted(d, reverse=True)
+    # Create new dim
     new_dim = list(dim)
-    new_dim.insert(d, 1)
+    for i in range(len(d)):
+        new_dim.insert(d[i], 1)
+    # Reshape and return
     return dy.reshape(x, tuple(new_dim), batch_size=batch_size)
 
 
