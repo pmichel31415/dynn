@@ -14,7 +14,7 @@ from dynn.layers import Transduction, Bidirectional
 
 from dynn.data import sst
 from dynn.data import preprocess
-from dynn.data.dictionary import Dictionary
+from dynn.data import Dictionary
 from dynn.data.batching import PaddedSequenceBatches
 
 # For reproducibility
@@ -42,6 +42,7 @@ train_x, dev_x, test_x = preprocess.lowercase([train_x, dev_x, test_x])
 print("Building the dictionary")
 dic = Dictionary.from_data(train_x)
 dic.freeze()
+dic.save("sst.dic")
 
 # Numberize the data
 print("Numberizing")
@@ -174,7 +175,7 @@ for epoch in range(N_EPOCHS):
     # Early stopping
     if accuracy > best_accuracy:
         best_accuracy = accuracy
-        network.pc.save("sst_bilstm.model")
+        dynn.io.save(network.pc, "sst_bilstm.model")
     else:
         print(f"Early stopping with best accuracy {best_accuracy*100:.2f}%")
         break
@@ -184,7 +185,7 @@ for epoch in range(N_EPOCHS):
 
 # Load model
 print("Reloading best model")
-network.pc.populate("sst_bilstm.model")
+dynn.io.populate(network.pc, "sst_bilstm.model.npz")
 
 # Test
 accuracy = 0
