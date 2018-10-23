@@ -227,14 +227,15 @@ class StackedTransformers(Sequential):
             new_h, weights = layer(outputs[0][-1], mask=mask, return_att=True)
             outputs[0].append(new_h)
             outputs[1].append(weights)
-        # Discard weights if they're not needed
+        # Select last output if needed
+        if return_last_only:
+            outputs = tuple(output[-1] for output in outputs)
+        else:
+            outputs = tuple(output[1:] for output in outputs)
+        # Discard  attention weights if they're not needed
         if not return_att:
             outputs = outputs[0]
-        # Return
-        if return_last_only:
-            return tuple(output[-1] for output in outputs)
-        else:
-            return tuple(output[:1] for output in outputs)
+        return outputs
 
 
 class CondTransformer(ParametrizedLayer):
@@ -490,11 +491,13 @@ class StackedCondTransformers(Sequential):
             outputs[0].append(new_h)
             outputs[1].append(self_weights)
             outputs[2].append(cond_weights)
-        # Discard weights if they're not needed
+        # Select last output if needed
+        if return_last_only:
+            outputs = tuple(output[-1] for output in outputs)
+        else:
+            outputs = tuple(output[1:] for output in outputs)
+        # Discard  attention weights if they're not needed
         if not return_att:
             outputs = outputs[0]
-        # Return
-        if return_last_only:
-            return tuple(output[-1] for output in outputs)
-        else:
-            return tuple(output[:1] for output in outputs)
+        return outputs
+

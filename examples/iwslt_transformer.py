@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 from math import ceil
 import time
 
@@ -32,11 +33,11 @@ LEARNING_RATE = 0.001
 LEARNING_RATE_DECAY = 2.0
 CLIP_NORM = 5.0
 N_LAYERS = 4
-MODEL_DIM = 16
+MODEL_DIM = 512
 N_HEADS = 4
 DROPOUT = 0.2
 LABEL_SMOOTHING = 0.1
-N_EPOCHS = 0
+N_EPOCHS = 20
 BEAM_SIZE = 4
 LENPEN = 1.0
 
@@ -89,7 +90,7 @@ class TransformerNetwork(object):
         E_src = self.pc.add_parameters((len(dic_src), dh), init=embed_init)
         self.src_embed = Embeddings(self.pc, dic_src, dh, params=E_src)
         # Position embeddings
-        self.pos_embeds = sin_embeddings(512, dh, transposed=True)
+        self.pos_embeds = sin_embeddings(2000, dh, transposed=True)
         # Encoder transformer
         self.enc = StackedTransformers(self.pc, nl, dh, nh, dropout=dr)
         # Decoder
@@ -206,7 +207,7 @@ class TransformerNetwork(object):
                 # top k words
                 next_words = log_p.argsort()[-beam_size:]
                 # Alignments from attention (average weights from each head)
-                align = dy.average(attn_weights).npvalue().argmax()
+                align = dy.average(attn_weights).npvalue()[:, -1].argmax()
                 # Add to new beam
                 for word in next_words:
                     # Handle stop condition
@@ -243,8 +244,18 @@ class TransformerNetwork(object):
 network = TransformerNetwork(N_LAYERS, MODEL_DIM, N_HEADS, DROPOUT)
 
 # Optimizer
-trainer = dy.AdamTrainer(network.pc, alpha=LEARNING_RATE)
+trainer = dy.AdamTrainer(network.pc)
 trainer.set_clip_threshold(CLIP_NORM)
+
+def schedule_lr(warmup):
+    step = 0
+    lr = 1 / np.sqrt(MODEL_DIM)
+    while True:
+        scale = min(1/np.sqrt(step), np.sqrt(step/warmup**3))
+        step += 1
+        yield lr * scale
+
+learning_rate = schedule_lr(4000)
 
 
 # Training
@@ -294,6 +305,7 @@ for epoch in range(N_EPOCHS):
         # Backward pass
         nll.backward()
         # Update the parameters
+        trainer.learning_rate = next(learning_rate)
         trainer.update()
         # Print the current loss from time to time
         if train_batches.just_passed_multiple(ceil(len(train_batches)/10)):
@@ -301,6 +313,8 @@ for epoch in range(N_EPOCHS):
                 f"Epoch {epoch+1}@{train_batches.percentage_done():.0f}%: "
                 f"NLL={nll.value():.3f} ppl={np.exp(nll.value()):.2f}"
             )
+        sys.stdout.flush()
+
     # End of epoch logging
     print(f"Epoch {epoch+1}@100%: "
           f"NLL={nll.value():.3f} ppl={np.exp(nll.value()):.2f}")
@@ -338,13 +352,14 @@ for epoch in range(N_EPOCHS):
         print("Decreasing learning rate")
         trainer.learning_rate /= LEARNING_RATE_DECAY
         print(f"New learning rate: {trainer.learning_rate}")
+    sys.stdout.flush()
 
 # Evaluation
 # ==========
 
 # Load model
 print("Reloading best model")
-# dynn.io.populate(network.pc, "iwslt_tf.model")
+dynn.io.populate(network.pc, "iwslt_tf.model.npz")
 
 
 def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
