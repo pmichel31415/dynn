@@ -141,7 +141,6 @@ class TestCondTransformer(TestCase):
         self.assertEqual(y.dim()[1], self.bsz)
         # Check masking
         gradients = c.gradient()
-        print(gradients)
         for b, length in enumerate(self.lengths):
             grad_elem = gradients[:, :, b].T
             for pos, g_val in enumerate(grad_elem):
@@ -150,6 +149,35 @@ class TestCondTransformer(TestCase):
                 print(b, pos, is_masked)
                 self.assertEqual(is_masked, zero_grad)
                 self.assertTrue(not is_masked or zero_grad)
+
+    def _test_cond_transformer_step(self, transform):
+        # Initialize computation graph
+        dy.renew_cg()
+        # Create inputs
+        x = dy.random_uniform((self.d, self.L), -1, 1, batch_size=self.bsz)
+        c = dy.random_uniform((self.dc, self.l_), -1, 1, batch_size=self.bsz)
+        # Initialize layer
+        transform.init(test=True, update=True)
+        # Run transformer
+        y = transform(x, c, lengths_c=self.lengths, triu=True)
+        # Now run step by step
+        y_ = []
+        state = None
+        for i in range(self.L):
+            x_i = dy.pick(x, index=i, dim=1)
+            state, y_i = transform.step(state, x_i, c, lengths_c=self.lengths)
+            y_.append(y_i)
+        y_ = dy.concatenate(y_, d=1)
+        # Average with masking
+        z = dy.sum_batches(dy.squared_distance(y, y_))
+        # Forward backward
+        z.forward()
+        z.backward(full=True)
+        # Check dimension
+        self.assertTupleEqual(y_.dim()[0], (self.d, self.L))
+        self.assertEqual(y_.dim()[1], self.bsz)
+        # Check values
+        self.assertAlmostEqual(z.value(), 0.0)
 
     def test_cond_transformer(self):
         # Create layer
@@ -173,6 +201,29 @@ class TestCondTransformer(TestCase):
             dropout=self.dropout
         )
         self._test_cond_transformer(transform)
+
+    def test_cond_transformer_step(self):
+        # Create layer
+        transform = transformer_layers.CondTransformer(
+            self.pc,
+            self.d,
+            self.dc,
+            self.nh,
+            dropout=self.dropout
+        )
+        self._test_cond_transformer_step(transform)
+
+    def test_stacked_cond_transformer_step(self):
+        # Create layer
+        transform = transformer_layers.StackedCondTransformers(
+            self.pc,
+            self.nl,
+            self.d,
+            self.dc,
+            self.nh,
+            dropout=self.dropout
+        )
+        self._test_cond_transformer_step(transform)
 
 
 if __name__ == '__main__':

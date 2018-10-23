@@ -11,6 +11,7 @@ from . import io
 from . import operations
 from . import activations
 from . import parameter_initialization
+from . import training
 
 __version__ = "0.1"
 
@@ -20,7 +21,8 @@ __all__ = [
     "io",
     "operations",
     "activations",
-    "parameter_initialization"
+    "parameter_initialization",
+    "training"
 ]
 
 

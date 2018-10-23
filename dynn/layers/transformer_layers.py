@@ -319,7 +319,7 @@ class CondTransformer(ParametrizedLayer):
             x (:py:class:`dynet.Expression`): Input (dimensions
                 ``hidden_dim x L``)
             c (:py:class:`dynet.Expression`): Context (dimensions
-                ``cond_dim x L``)
+                ``cond_dim x l``)
             lengths (list, optional): Defaults to None. List of lengths for
                 masking (used for self attention)
             left_aligned (bool, optional): Defaults to True. USed for masking
@@ -373,6 +373,81 @@ class CondTransformer(ParametrizedLayer):
             return h_mlp, self_weights, cond_weights
         else:
             return h_mlp
+
+    def step(
+        self,
+        state,
+        x,
+        c,
+        lengths=None,
+        left_aligned=True,
+        mask=None,
+        triu=False,
+        lengths_c=None,
+        left_aligned_c=True,
+        mask_c=None,
+        return_att=False,
+    ):
+        """Runs the transformer for one step. Useful for decoding.
+
+        The "state" of the transformer is the list of ``L-1`` inputs and its
+        output is the ``L`` th output. This returns a tuple of both the new
+        state (``L-1`` previous inputs + ``L`` th input concatenated) and the
+        ``L`` th output
+
+        Args:
+            x (:py:class:`dynet.Expression`): Input (dimension ``hidden_dim``)
+            state (:py:class:`dynet.Expression`, optional): Previous "state"
+                (dimensions ``hidden_dim x (L-1)``)
+            c (:py:class:`dynet.Expression`): Context (dimensions
+                ``cond_dim x l``)
+            lengths_c (list, optional): Defaults to None. List of lengths for
+                masking (used for conditional attention)
+            left_aligned_c (bool, optional): Defaults to True. Used for masking
+                in conditional attention.
+            mask_c (:py:class:`dynet.Expression`, optional): Defaults to None.
+                As an alternative to ``length_c``, you can pass a mask
+                expression directly (useful to reuse masks accross layers).
+            return_att (bool, optional): Defaults to False. Return the self and
+                conditional attention weights
+            return_att (bool, optional): Defaults to False. [description]
+
+        Returns:
+            [type]: [description]
+        """
+        # New "state"
+        if state is not None:
+            # Previous state has shape (d, L), B
+            if len(state.dim()[0]) == 1:
+                state = unsqueeze(state, d=-1)
+            new_state = dy.concatenate([state, x], d=1)
+        else:
+            new_state = x
+        # Context has shape (dc, l), B
+        if len(c.dim()[0]) == 1:
+            c = unsqueeze(c, d=-1)
+        # Masking (conditional attention)
+        mask_c = _transformer_mask(c, False, mask_c, lengths_c, left_aligned_c)
+        # Self attend
+        h_att, self_weights = self.self_att(x, new_state, new_state)
+        # Dropout + residual + normalization
+        x_drop = conditional_dropout(x, self.dropout, not self.test)
+        h_att = self.layer_norm_self_att(h_att + x_drop, d=1)
+        # Conditional attention
+        h_cond, cond_weights = self.cond_att(h_att, c, c, mask_c)
+        # Dropout + residual + normalization
+        h_att_drop = conditional_dropout(h_att, self.dropout, not self.test)
+        h_cond = self.layer_norm_cond_att(h_cond + h_att_drop, d=1)
+        # MLP
+        h_mlp = self.mlp(h_att + x)
+        # Residual + normalization
+        h_cond_drop = conditional_dropout(h_cond, self.dropout, not self.test)
+        h_mlp = self.layer_norm_mlp(h_mlp + h_cond_drop, d=1)
+        # Return
+        if return_att:
+            return new_state, h_mlp, self_weights, cond_weights
+        else:
+            return new_state, h_mlp
 
 
 class StackedCondTransformers(Sequential):
@@ -501,3 +576,100 @@ class StackedCondTransformers(Sequential):
             outputs = outputs[0]
         return outputs
 
+    def step(
+        self,
+        state,
+        x,
+        c,
+        lengths=None,
+        left_aligned=True,
+        mask=None,
+        triu=False,
+        lengths_c=None,
+        left_aligned_c=True,
+        mask_c=None,
+        return_att=False,
+        return_last_only=True,
+    ):
+        """Runs the transformer for one step. Useful for decoding.
+
+        The "state" of the multilayered transformer is the list of ``n_layers``
+        ``L-1`` sized inputs and its output is the output of the last layer.
+        This returns a tuple of both the new state (list of ``n_layers`` ``L``
+        sized inputs) and the ``L`` th output.
+
+
+        Args:
+            x (:py:class:`dynet.Expression`): Input (dimension ``hidden_dim``)
+            state (:py:class:`dynet.Expression`): Previous "state" (list of
+                ``n_layers`` expressions of dimensions ``hidden_dim x (L-1)``)
+            c (:py:class:`dynet.Expression`): Context (dimensions
+                ``cond_dim x l``)
+            lengths_c (list, optional): Defaults to None. List of lengths for
+                masking (used for conditional attention)
+            left_aligned_c (bool, optional): Defaults to True. Used for masking
+                in conditional attention.
+            mask_c (:py:class:`dynet.Expression`, optional): Defaults to None.
+                As an alternative to ``length_c``, you can pass a mask
+                expression directly (useful to reuse masks accross layers).
+            return_att (bool, optional): Defaults to False. Return the self and
+                conditional attention weights
+            return_att (bool, optional): Defaults to False. [description]
+
+        Returns:
+            tuple: The output expression (+ the
+                attention weights if ``return_att`` is ``True``)
+        """
+        # State is a list
+        if state is None:
+            state = [None for _ in range(len(self.layers))]
+        # Check state size
+        if len(state) != len(self.layers):
+            raise ValueError(
+                f"Must have {len(self.layers)} states in "
+                f"{len(self.layers)}-layered conditional transformer "
+                f"(got {len(state)})."
+            )
+        # Context is a list
+        if not isinstance(c, list):
+            c = [c for _ in range(len(self.layers))]
+        elif len(c) == 1:
+            c = [c[0] for _ in range(len(self.layers))]
+        # Check context size
+        if len(c) != len(self.layers):
+            raise ValueError(
+                f"Must have either 1 or {len(self.layers)} contexts in "
+                f"{len(self.layers)}-layered conditional transformer "
+                f"(got {len(c)})."
+            )
+        # Masking
+        mask_c = _transformer_mask(
+            c[0],
+            False,
+            mask_c,
+            lengths_c,
+            left_aligned_c
+        )
+        # Keep track each layer's output
+        outputs = ([None], [x], [None], [None])
+        # Run all layers
+        for layer, c_, s in zip(self.layers, c, state):
+            new_s, new_h, self_weights, cond_weights = layer.step(
+                s,  outputs[1][-1], c_, mask_c=mask_c, return_att=True
+            )
+            outputs[0].append(new_s)
+            outputs[1].append(new_h)
+            outputs[2].append(self_weights)
+            outputs[3].append(cond_weights)
+        # Strip first element
+        new_state, h, self_weights, cond_weights = [out[1:] for out in outputs]
+        # Select last output if needed (still return full state tho)
+        if return_last_only:
+            h = h[-1]
+            self_weights = self_weights[-1]
+            cond_weights = cond_weights[-1]
+        # Discard  attention weights if they're not needed
+        if not return_att:
+            return new_state, h
+        else:
+            return new_state, h, self_weights, cond_weights

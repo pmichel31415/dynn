@@ -14,9 +14,10 @@ from dynn.layers import Embeddings
 from dynn.layers import Affine
 from dynn.layers import Sequential
 
-from dynn.operations import stack, unsqueeze
+from dynn.operations import stack
 from dynn.util import sin_embeddings
 from dynn.parameter_initialization import UniformInit
+from dynn.training import inverse_sqrt_schedule
 
 from dynn.data import iwslt, preprocess, Dictionary
 from dynn.data.batching import SequencePairsBatches
@@ -174,7 +175,8 @@ class TransformerNetwork(object):
         max_len = 2 * src.max_length
         # Initialize beams
         first_beam = {
-            "wembs": self.sos[0],  # Previous word embedding
+            "wemb": self.sos[0],  # Previous word embedding
+            "state": None,  # Previous state
             "score": 0.0,  # score
             "words": [],  # generated words
             "align": [],  # Alignments given by attention
@@ -188,22 +190,17 @@ class TransformerNetwork(object):
                 # Don't do anything if the beam is over
                 if beam["is_over"]:
                     continue
-                # Input embeddings
-                embeds = beam["wembs"]
-                # Current length
-                _, L = embeds.dim()[0]
-                # Re-decode from the previous embeddings
-                h, _, attn_weights = self.dec(
-                    embeds,
+                # Run one step of the decoder
+                new_state, h, _, attn_weights = self.dec.step(
+                    beam["state"],
+                    beam["wemb"],
                     X,
                     mask_c=mask,
                     triu=True,
                     return_att=True
                 )
-                # Output for last word
-                last_h = dy.pick(h, index=L-1, dim=1)
                 # Get log_probs
-                log_p = dy.log_softmax(self.project(last_h)).npvalue()
+                log_p = dy.log_softmax(self.project(h)).npvalue()
                 # top k words
                 next_words = log_p.argsort()[-beam_size:]
                 # Alignments from attention (average weights from each head)
@@ -219,10 +216,9 @@ class TransformerNetwork(object):
                             "is_over": True,
                         }
                     else:
-                        new_embed = unsqueeze(self.tgt_embed(word), d=-1)
-                        new_embed += dy.inputTensor(self.pos_embeds[:, L:L+1])
                         new_beam = {
-                            "wembs": dy.concatenate([embeds, new_embed], d=1),
+                            "wemb": self.tgt_embed(word),
+                            "state": new_state,
                             "words": beam["words"] + [word],
                             "score": beam["score"] + log_p[word],
                             "align": beam["align"] + [align],
@@ -247,16 +243,8 @@ network = TransformerNetwork(N_LAYERS, MODEL_DIM, N_HEADS, DROPOUT)
 trainer = dy.AdamTrainer(network.pc)
 trainer.set_clip_threshold(CLIP_NORM)
 
-def schedule_lr(warmup):
-    step = 0
-    lr = 1 / np.sqrt(MODEL_DIM)
-    while True:
-        scale = min(1/np.sqrt(step), np.sqrt(step/warmup**3))
-        step += 1
-        yield lr * scale
 
-learning_rate = schedule_lr(4000)
-
+learning_rate = inverse_sqrt_schedule(warmup=4000, lr0=1 / np.sqrt(MODEL_DIM))
 
 # Training
 # ========
