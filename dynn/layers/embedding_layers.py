@@ -106,7 +106,7 @@ class Embeddings(ParametrizedLayer):
         else:
             return dy.pick_batch(self.params_e, idx)
         
-    def __call__(self, idxs):
+    def __call__(self, idxs, length_dim=0):
         """Returns the input's embedding
 
         If ``idxs`` is a list this returns a batch of embeddings. If it's a
@@ -128,8 +128,12 @@ class Embeddings(ParametrizedLayer):
             embeds = self._lookup(idxs)
         elif len(idxs.shape) == 2:
             # Matrix of indices
-            vecs = [self._lookup(idx) for idx in idxs]
-            embeds = dy.concatenate([unsqueeze(vec, d=0) for vec in vecs], d=0)
+            d = self.embed_dim
+            L, bsz = idxs.shape
+            flat_embeds = self._lookup(idxs.flatten(order="F"))
+            embeds = dy.reshape(flat_embeds, (d, L), batch_size=bsz)
+            if length_dim == 0:
+                embeds = dy.transpose(embeds)
         else:
             raise ValueError(
                 "Embeddings only takes an int , list of ints or matrix of "
@@ -144,7 +148,7 @@ class Embeddings(ParametrizedLayer):
             # This is automatic when the input is only 1 index per batch
             # element
             if len(idxs.shape) == 2:
-                mask = unsqueeze(mask, d=-1)
+                mask = unsqueeze(mask, d=1-length_dim)
             # Apply the mask
             embeds = dy.cmult(1-mask, embeds) + self.pad_mask * mask
 
