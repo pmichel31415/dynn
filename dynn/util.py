@@ -187,19 +187,21 @@ def _should_mask(step, min_length, max_length, left_padded):
         return step + min_length < max_length
 
 
-def num_params(pc):
+def num_params(pc, params=True, lookup_params=True):
     """Number of parameters in a given ParameterCollection"""
     N = 0
     # All parameters
-    for p in pc.parameters_list():
-        p_size = 1
-        for d in p.shape():
-            p_size *= d
-        N += p_size
+    if params:
+        for p in pc.parameters_list():
+            p_size = 1
+            for d in p.shape():
+                p_size *= d
+            N += p_size
     # All lookup parameters
-    for lp in pc.lookup_parameters_list():
-        lp_size = 1
-        for d in lp.shape():
-            lp_size *= d
-        N += lp_size
+    if lookup_params:
+        for lp in pc.lookup_parameters_list():
+            lp_size = 1
+            for d in lp.shape():
+                lp_size *= d
+            N += lp_size
     return N
