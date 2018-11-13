@@ -110,11 +110,11 @@ class Parallel(BaseLayer):
         for layer in self.layers:
             layer.init(test=test, update=update)
 
-    def __call__(self, *args, insert_dim=None):
+    def __call__(self, x, insert_dim=None, **kwargs):
         """Calls all the layers in succession.
 
         Computes
-        ``dy.concatenate([layers[0](*args)...layers[n-1](*args)], d=dim)``
+        ``dy.concatenate([layers[0](x)...layers[n-1](x)], d=dim)``
 
         Args:
             x (:py:class:`dynet.Expression`): Input expression
@@ -130,7 +130,7 @@ class Parallel(BaseLayer):
         # Compute all the layers
         hs = []
         for layer in self.layers:
-            h = layer(*args)
+            h = layer(x, **kwargs)
             if insert_dim:
                 h = operations.unsqueeze(h, d=self.dim)
             hs.append(h)
