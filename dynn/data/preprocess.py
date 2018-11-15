@@ -7,6 +7,7 @@ Usful functions for preprocessing data
 """
 import numpy as np
 import sacrebleu
+import sacremoses
 
 
 def lowercase(data):
@@ -41,7 +42,7 @@ def _tokenize(data, tokenizer):
         raise ValueError("Can only tokenize strings or lists of strings")
 
 
-def tokenize(data, tok="space"):
+def tokenize(data, tok="space", lang="en"):
     """Tokenize text data.
 
     There are 5 tokenizers supported:
@@ -50,10 +51,14 @@ def tokenize(data, tok="space"):
     - "char": split in characters
     - "13a": Official WMT tokenization
     - "zh": Chinese tokenization (See ``sacrebleu`` doc)
+    - "moses": Moses tokenizer (you can specify lthe language).
+       Uses the `sacremoses <https://github.com/alvations/sacremoses>`_
 
     Args:
-        data (list, str): String or list (of lists...) of strings
+        data (list, str): String or list (of lists...) of strings.
         tok (str, optional): Tokenization. Defaults to "space".
+        lang (str, optional): Language (only useful for the moses tokenizer).
+            Defaults to "en".
 
     Returns:
         list, str: Tokenized data
@@ -67,6 +72,10 @@ def tokenize(data, tok="space"):
         def tokenizer(x): return sacrebleu.tokenize_13a(x).split(" ")
     elif tok is "zh":
         def tokenizer(x): return sacrebleu.tokenize_zh(x).split(" ")
+    elif tok is "moses":
+        moses_tok = sacremoses.MosesTokenizer(lang=lang)
+
+        def tokenizer(x): return moses_tok.tokenize(x)
     else:
         raise ValueError(f"Unknown tokenizer {tok}")
     return _tokenize(data, tokenizer)

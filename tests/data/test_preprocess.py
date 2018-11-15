@@ -36,7 +36,7 @@ class TestPreprocess(TestCase):
             self.assertEqual(elem, "abcdabcd")
 
     def test_tokenize(self):
-        tokenizers = ["space", "char", "13a"]
+        tokenizers = ["space", "char", "13a", "moses"]
         original = """This is a "detokenized" sentence, right?"""
         expected = {
             "space": ["This", "is", "a", "\"detokenized\"",
@@ -47,6 +47,8 @@ class TestPreprocess(TestCase):
                      " ", "r", "i", "g", "h", "t", "?"],
             "13a": ["This", "is", "a", "\"", "detokenized", "\"",
                     "sentence", ",", "right", "?"],
+            "moses": ["This", "is", "a", "&quot;", "detokenized", "&quot;",
+                      "sentence", ",", "right", "?"],
         }
         for tok in tokenizers:
             tokenized = preprocess.tokenize(original, tok=tok)
