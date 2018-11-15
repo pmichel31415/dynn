@@ -348,7 +348,7 @@ for epoch in range(N_EPOCHS):
     # Early stopping
     if ppl < best_ppl:
         best_ppl = ppl
-        network.pc.save("iwslt_att.model")
+        dynn.io.save(network.pc, "iwslt_att.model.npz")
     else:
         print("Decreasing learning rate")
         trainer.learning_rate /= LEARNING_RATE_DECAY
@@ -359,7 +359,7 @@ for epoch in range(N_EPOCHS):
 
 # Load model
 print("Reloading best model")
-network.pc.populate("iwslt_att.model")
+dynn.io.populate(network.pc, "iwslt_att.model.npz")
 
 
 def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
