@@ -10,6 +10,9 @@ import re
 import numpy as np
 import dynet as dy
 
+_PARAM_NAMES_KEY = "_param_names_"
+
+is_param_id = re.compile(r"^param_([0-9]+)$")
 is_param_name = re.compile(r"^(/[^0-9_ ]+(_[0-9]+)*)+\t(param|lookup)$")
 
 
@@ -39,11 +42,45 @@ def save(pc, filename, compressed=True):
         val = lp.as_array()
         header = f"{lp.name()}\tlookup"
         params[header] = val
+
+    param_names = np.asarray(list(params.keys()))
+    param_values = [params[name] for name in param_names]
+    arrays = {f"param_{i}": value
+              for i, value in enumerate(param_values)}
+    arrays[_PARAM_NAMES_KEY] = param_names
     # Save all
     if compressed:
-        np.savez_compressed(filename, **params)
+        np.savez_compressed(filename, **arrays)
     else:
-        np.savez(filename, **params)
+        np.savez(filename,  **arrays)
+
+
+def _load_from_npz(filename, ignore_invalid_names=False):
+    # Load the npz file
+    file_npz = np.load(filename)
+    # Get actual parameter names
+    if _PARAM_NAMES_KEY not in file_npz.files:
+        if not ignore_invalid_names:
+            raise ValueError("Wrong format")
+        return {}
+    actual_names = file_npz[_PARAM_NAMES_KEY]
+    # Associate names with values
+    params = {}
+    param_arrays = [(name, val) for name, val in file_npz.items()
+                    if name != _PARAM_NAMES_KEY]
+    for name, val in param_arrays:
+        # Retrieve the parameter's actual name
+        if not is_param_id.match(name):
+            if ignore_invalid_names:
+                continue
+            else:
+                raise ValueError(f"Invalid parameter name {name} "
+                                 f"in file {filename}")
+        param_id = int(name.split("_")[-1])
+        actual_name = actual_names[param_id]
+        params[actual_name] = val
+    # Sort by name
+    return params
 
 
 def load(filename, ignore_invalid_names=False):
@@ -62,13 +99,12 @@ def load(filename, ignore_invalid_names=False):
     """
     # All the parameter collections (master collection and subcollections)
     pcs = {"/": dy.ParameterCollection()}
-    # Load the npz file
-    file_npz = np.load(filename)
-    # Sort parameters by name
-    params = [(name, val) for name, val in file_npz.items()]
-    params = sorted(params, key=lambda x: x[0])
+    # Load npz file
+    params = _load_from_npz(filename, ignore_invalid_names)
+    # Sort by name
+    sorted_params = sorted(params.items(), key=lambda x: x[0])
     # Read them in order
-    for name, val in params:
+    for name, val in sorted_params:
         # Check the name
         if not is_param_name.match(name):
             if ignore_invalid_names:
@@ -113,13 +149,13 @@ def populate(pc, filename, ignore_shape_mismatch=False):
     """
 
     # Load npz
-    file_npz = np.load(filename)
+    loaded_params = _load_from_npz(filename, True)
     # Iterate over Parameters in the collection
     for param in pc.parameters_list():
         name = f"{param.name()}\tparam"
         # If the parameter is in the npz, overwrite its value
-        if name in file_npz:
-            file_value = file_npz[name]
+        if name in loaded_params:
+            file_value = loaded_params[name]
             if file_value.shape != param.shape():
                 if ignore_shape_mismatch:
                     continue
@@ -134,8 +170,8 @@ def populate(pc, filename, ignore_shape_mismatch=False):
     for lookup_param in pc.lookup_parameters_list():
         name = f"{lookup_param.name()}\tlookup"
         # If the parameter is in the npz, overwrite its value
-        if name in file_npz:
-            file_value = file_npz[name]
+        if name in loaded_params:
+            file_value = loaded_params[name]
             if file_value.shape != lookup_param.shape():
                 if ignore_shape_mismatch:
                     continue

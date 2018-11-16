@@ -16,7 +16,8 @@ class TestUtil(TestCase):
     def setUp(self):
         self.max_dim = 50
         self.path = tempfile.mkdtemp()
-        self.filename = os.path.join(self.path, "test.pc.npz")
+        rand_idx = np.random.randint(1e6)
+        self.filename = os.path.join(self.path, f"test.{rand_idx}.pc.npz")
 
     def tearDown(self):
         shutil.rmtree(self.path)
@@ -24,12 +25,12 @@ class TestUtil(TestCase):
     def _dummy_pc(self):
         pc = dy.ParameterCollection()
         for d in range(1, self.max_dim):
-            name = "a"*d
+            name = "a" * d
             subpc = pc.add_subcollection(name=f"{name}-pc")
-            subpc.add_parameters((d, d+1), name=name)
-            subpc.add_parameters((d+1, d), name=name)
-            subpc.add_lookup_parameters((d+1, d+2), name=f"{name}-lookup")
-            subpc.add_lookup_parameters((d+2, d+1), name=f"{name}-lookup")
+            subpc.add_parameters((d, d + 1), name=name)
+            subpc.add_parameters((d + 1, d), name=name)
+            subpc.add_lookup_parameters((d + 1, d + 2), name=f"{name}-lookup")
+            subpc.add_lookup_parameters((d + 2, d + 1), name=f"{name}-lookup")
         return pc
 
     def test_load(self):
