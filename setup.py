@@ -29,6 +29,12 @@ def find_version():
     raise RuntimeError("Unable to find version string.")
 
 
+def read_requirements():
+    requirements_text = read_from_here("requirements.txt")
+    requirements = [line.strip() for line in requirements_text.split("\n")]
+    return requirements
+
+
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
@@ -44,7 +50,7 @@ setup(
     author="Paul Michel",
     author_email="pmichel1@cs.cmu.edu",
     python_requires=">=3.6",
-    install_requires=["dynet", "sacrebleu"],
+    install_requires=read_requirements(),
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
