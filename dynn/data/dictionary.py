@@ -15,24 +15,25 @@ EOS_TOKEN = "<eos>"
 
 class Dictionary(object):
 
-    def __init__(self, symbols=None, special_symbols=None):
+    def __init__(self, symbols=None, special_symbols=None, no_specials=False):
         # Frozen means you can't add symbols
         self.frozen = False
         # Symbols map ints to, well, symbols
         self.symbols = []
         # Indices does the reverse (symbol to int)
         self.indices = {}
-        # UNK (for unknown words)
-        self.unk_idx = self.add(UNK_TOKEN)
-        self.unk_tok = UNK_TOKEN
-        # PAD (for padding)
-        self.pad_idx = self.add(PAD_TOKEN)
-        self.pad_tok = PAD_TOKEN
-        # EOS (End Of Sentence)
-        self.eos_idx = self.add(EOS_TOKEN)
-        self.eos_tok = EOS_TOKEN
+        if not no_specials:
+            # UNK (for unknown words)
+            self.unk_idx = self.add(UNK_TOKEN)
+            self.unk_tok = UNK_TOKEN
+            # PAD (for padding)
+            self.pad_idx = self.add(PAD_TOKEN)
+            self.pad_tok = PAD_TOKEN
+            # EOS (End Of Sentence)
+            self.eos_idx = self.add(EOS_TOKEN)
+            self.eos_tok = EOS_TOKEN
         # Additional special symbols
-        if special_symbols is not None:
+        if special_symbols is not None and not no_specials:
             for special_symbol in special_symbols:
                 self.add(special_symbol)
         # Number of special symbols (easier to test for special symbols by
@@ -161,7 +162,8 @@ class Dictionary(object):
         min_count=1,
         max_size=-1,
         symbols=None,
-        special_symbols=None
+        special_symbols=None,
+        no_specials=False,
     ):
         """Build a dictionary from a dataset
 
@@ -213,7 +215,11 @@ class Dictionary(object):
         symbols.extend([symbol for symbol, _ in most_freq])
 
         # Actually create dictionary
-        dic = Dictionary(symbols=symbols, special_symbols=special_symbols)
+        dic = Dictionary(
+            symbols=symbols,
+            special_symbols=special_symbols,
+            no_specials=no_specials
+        )
 
         return dic
 

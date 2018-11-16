@@ -285,11 +285,13 @@ class TestSequencePairsBatches(TestCase):
                               high=len(self.tgt_dic), size=(i+5) % max_size)
             for i in range(1, self.data_size + 1)
         ]
+        self.labels = np.random.randint(3, size=self.data_size)
 
     def _dummy_iterator(
         self,
         shuffle=True,
         group_by_length=None,
+        labelled=False,
     ):
         # Iterator
         return batching.SequencePairsBatches(
@@ -297,6 +299,7 @@ class TestSequencePairsBatches(TestCase):
             self.tgt_data,
             self.src_dic,
             self.tgt_dic,
+            labels=self.labels if labelled else None,
             max_samples=self.max_samples,
             max_tokens=self.max_tokens,
             shuffle=shuffle,
@@ -335,6 +338,23 @@ class TestSequencePairsBatches(TestCase):
                     self.max_tokens
                 )
                 self.assertEqual(x.sequences.shape[1], y.sequences.shape[1])
+
+    def test_labelled(self):
+        batched_dataset = self._dummy_iterator(labelled=True)
+        # Try iterating
+        for x, y, label in batched_dataset:
+            # check dimensions
+            self.assertEqual(x.sequences.shape[0], max(x.lengths))
+            self.assertLessEqual(x.sequences.shape[1], self.max_samples)
+            self.assertLessEqual(
+                len([w for seq in x.sequences for w in seq
+                     if w != batched_dataset.src_pad_idx]) +
+                len([w for seq in y.sequences for w in seq
+                     if w != batched_dataset.tgt_pad_idx]),
+                self.max_tokens
+            )
+            self.assertEqual(x.sequences.shape[1], y.sequences.shape[1])
+            self.assertTupleEqual(label.shape, (x.sequences.shape[1],))
 
     def test_shuffle(self):
         batched_dataset = self._dummy_iterator(shuffle=True)

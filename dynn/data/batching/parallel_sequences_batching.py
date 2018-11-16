@@ -62,7 +62,8 @@ class SequencePairsBatches(object):
         src_data,
         tgt_data,
         src_dictionary,
-        tgt_dictionary,
+        tgt_dictionary=None,
+        labels=None,
         max_samples=32,
         max_tokens=99999999,
         shuffle=True,
@@ -73,7 +74,7 @@ class SequencePairsBatches(object):
         if len(src_data) != len(tgt_data):
             raise ValueError(
                 f"Source and target data mismatch: "
-                "{len(src_data)} != {len(tgt_data)}"
+                f"{len(src_data)} != {len(tgt_data)}"
             )
         self.num_samples = len(src_data)
         self.src_size = sum(len(src) for src in src_data)
@@ -85,7 +86,10 @@ class SequencePairsBatches(object):
         self.src_left_aligned = src_left_aligned
         self.tgt_left_aligned = tgt_left_aligned
         self.src_pad_idx = src_dictionary.pad_idx
-        self.tgt_pad_idx = tgt_dictionary.pad_idx
+        if tgt_dictionary is not None:
+            self.tgt_pad_idx = tgt_dictionary.pad_idx
+        else:
+            self.tgt_pad_idx = self.src_pad_idx
         self.group_by_src_length = False
         self.group_by_tgt_length = False
         if group_by_length is "source":
@@ -110,7 +114,17 @@ class SequencePairsBatches(object):
         self.tgt_data = np.asarray([tgt_data[idx] for idx in initial_order])
         # Keep track of the original position of each sentence
         self.original_position = initial_order
-
+        # Handle labels
+        self.labelled = labels is not None
+        if self.labelled:
+            # Check size
+            if len(labels) != self.num_samples:
+                raise ValueError(
+                    "Number of samples and labels differ: "
+                    f"{self.num_samples} != {len(labels)}"
+                )
+            # Store in appropriate order
+            self.labels = np.asarray([labels[idx] for idx in initial_order])
         # Initial position and order
         self.position = 0
         self.order = []
@@ -152,7 +166,10 @@ class SequencePairsBatches(object):
             pad_idx=self.tgt_pad_idx,
             left_aligned=self.tgt_left_aligned,
         )
-        return src_batch, tgt_batch
+        if self.labelled:
+            return src_batch, tgt_batch, self.labels[index]
+        else:
+            return src_batch, tgt_batch
 
     def percentage_done(self):
         """What percent of the data has been covered in the current epoch"""
