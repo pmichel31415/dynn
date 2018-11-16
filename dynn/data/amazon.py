@@ -66,7 +66,7 @@ def read_amazon(split, path, tok=True, size="200k"):
 
     if tok:
         reviews_filename = f"{reviews_filename}.tok"
-
+        
     abs_filename = os.path.join(os.path.abspath(path), amazon_file)
 
     reviews = []
@@ -75,7 +75,7 @@ def read_amazon(split, path, tok=True, size="200k"):
     with tarfile.open(abs_filename) as tar:
         with tar.extractfile(reviews_filename) as f:
             for line in f:
-                review = line.strip().split()
+                review = line.decode().strip().split()
                 reviews.append(review)
 
         with tar.extractfile(labels_filename) as f:
