@@ -15,6 +15,7 @@ Supported datasets are:
 # Full module imports
 from . import (
     batching,
+    caching,
     preprocess,
     mnist,
     cifar10,
@@ -30,6 +31,7 @@ from .trees import Tree
 
 __all__ = [
     "batching",
+    "caching",
     "preprocess",
     "mnist",
     "cifar10",
