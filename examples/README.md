@@ -1,10 +1,18 @@
 # DyNN examples
 
+Here are some examples of using DyNN for writing models, data loading/preprocessing, training and evaluation code. Feel free to reuse in your own project.
+
 - [CNN for MNIST Classification](cnn-mnist)
 - [1D CNN for Sentiment Classification on SST](cnn-sst)
 - [BiLSTM for Sentiment Classification on SST](bilstm-sst)
 - [LSTM Language Modeling on the PennTreeBank](lstm-language-modeling-on-the-penntreebank)
 - [BiLSTM + attention for french -> english translation on IWSLT16](iwslt16-fr-en-translation)
+
+The following examples are still WIP
+
+ - [IWSLT Transformer](iwslt_transformer.py)
+ - [SNLI BiLSTM](snli_bilstm.py)
+ - [CIFAR10 Residual CNN](cifar10_resnet.py)
 
 ## CNN MNIST
 
