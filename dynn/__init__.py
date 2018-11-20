@@ -5,6 +5,7 @@ DyNN
 import numpy as np
 import dynet as dy
 
+from . import command_line
 from . import layers
 from . import data
 from . import io
@@ -16,6 +17,7 @@ from . import training
 __version__ = "0.1"
 
 __all__ = [
+    "command_line",
     "layers",
     "data",
     "io",
