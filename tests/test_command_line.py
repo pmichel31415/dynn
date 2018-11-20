@@ -15,6 +15,7 @@ class TestCommandLine(TestCase):
         self.actual_sysargs = sys.argv[:]
         sys.argv = [
             sys.argv[0],
+            "--dynet-seed", "42",
             "--dynet-gpu",
             "--dynet-gpus", "1",
             "--dynet-devices", "CPU",
@@ -36,6 +37,7 @@ class TestCommandLine(TestCase):
         command_line.add_dynet_args(self.parser)
 
         args = self.parser.parse_args()
+        self.assertTrue(hasattr(args, "dynet_seed"))
         self.assertTrue(hasattr(args, "dynet_gpu"))
         self.assertTrue(hasattr(args, "dynet_gpus"))
         self.assertTrue(hasattr(args, "dynet_devices"))

@@ -21,6 +21,7 @@ def add_dynet_args(parser, new_group=True):
     """
     if new_group:
         parser = parser.add_argument_group("DyNet specific arguments")
+    parser.add_argument("--dynet-seed", type=int)
     parser.add_argument("--dynet-gpu", action="store_true")
     parser.add_argument("--dynet-gpus", type=int)
     parser.add_argument("--dynet-devices", type=str)
