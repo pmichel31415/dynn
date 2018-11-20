@@ -66,7 +66,7 @@ def read_amazon(split, path, tok=True, size="200k"):
 
     if tok:
         reviews_filename = f"{reviews_filename}.tok"
-        
+
     abs_filename = os.path.join(os.path.abspath(path), amazon_file)
 
     reviews = []
