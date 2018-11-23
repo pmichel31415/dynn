@@ -7,6 +7,7 @@ import time
 import numpy as np
 import dynet as dy
 import sacrebleu
+import sacremoses
 
 import dynn
 from dynn.layers import StackedTransformers, StackedCondTransformers
@@ -21,6 +22,7 @@ from dynn.training import inverse_sqrt_schedule
 
 from dynn.data import iwslt, preprocess, Dictionary
 from dynn.data.batching import SequencePairsBatches
+from dynn.data.caching import cached_to_file
 
 # For reproducibility
 dynn.set_random_seed(31415)
@@ -30,48 +32,60 @@ dynn.set_random_seed(31415)
 # ================
 
 VOC_SIZE = 30000
-LEARNING_RATE = 0.001
-LEARNING_RATE_DECAY = 2.0
+LEARNING_RATE_DECAY = 1.0
 CLIP_NORM = 5.0
 N_LAYERS = 4
 MODEL_DIM = 512
 N_HEADS = 4
-DROPOUT = 0.2
+DROPOUT = 0.3
 LABEL_SMOOTHING = 0.1
 N_EPOCHS = 20
 BEAM_SIZE = 4
-LENPEN = 1.0
+LENPEN = 0.0
 
 
 # Data
 # ====
 
-# Download IWSLT
-iwslt.download_iwslt("data", year="2016", langpair="fr-en")
+@cached_to_file("iwslt.mosestok.bin")
+def prepare_data():
+    # Download IWSLT
+    iwslt.download_iwslt("data", year="2016", langpair="fr-en")
 
-# Load the data
-print("Loading the IWSLT data")
-train, dev, test = iwslt.load_iwslt("data", year="2016", langpair="fr-en")
-print(f"{len(train[0])} training samples")
-print(f"{len(dev[0])} dev samples")
-print(f"{len(test[0])} test samples")
+    # Load the data
+    print("Loading the IWSLT data")
+    train, dev, test = iwslt.load_iwslt("data", year="2016", langpair="fr-en", tgt_eos=None)
+    print(f"{len(train[0])} training samples")
+    print(f"{len(dev[0])} dev samples")
+    print(f"{len(test[0])} test samples")
 
-print("Lowercasing")
-train, dev, test = preprocess.lowercase([train, dev, test])
+    print("Tokenizing")
+    train, dev, test = preprocess.tokenize([train, dev, test], "moses", "en")
+    print("Lowercasing")
+    train, dev, test = preprocess.lowercase([train, dev, test])
 
-# Learn the dictionaries
-print("Building the dictionaries")
-dic_src = Dictionary.from_data(train[0], max_size=VOC_SIZE)
-dic_src.freeze()
-dic_src.save("iwslt_att.dic.src")
-dic_tgt = Dictionary.from_data(train[1], max_size=VOC_SIZE)
-dic_tgt.freeze()
-dic_tgt.save("iwslt_att.dic.tgt")
+    # Learn the dictionaries
+    print("Building the dictionaries")
+    dic_src = Dictionary.from_data(train[0], max_size=VOC_SIZE)
+    dic_src.freeze()
+    dic_src.save("iwslt_att.dic.src")
+    dic_tgt = Dictionary.from_data(train[1], max_size=VOC_SIZE)
+    dic_tgt.freeze()
+    dic_tgt.save("iwslt_att.dic.tgt")
 
-# Numberize the data
-print("Numberizing")
-train_src, dev_src, test_src = dic_src.numberize([train[0], dev[0], test[0]])
-train_tgt, dev_tgt, test_tgt = dic_tgt.numberize([train[1], dev[1], test[1]])
+    # Numberize the data
+    print("Numberizing")
+    train_src, dev_src, test_src = dic_src.numberize([train[0], dev[0], test[0]])
+    train_tgt, dev_tgt, test_tgt = dic_tgt.numberize([train[1], dev[1], test[1]])
+    # Append EOS token in the target
+    train_tgt = [sent + [dic_tgt.eos_idx] for sent in train_tgt]
+    dev_tgt = [sent + [dic_tgt.eos_idx] for sent in dev_tgt]
+    test_tgt = [sent + [dic_tgt.eos_idx] for sent in test_tgt]
+    return dic_src, dic_tgt, train, dev, test, train_src, dev_src, test_src, train_tgt, dev_tgt, test_tgt
+
+(
+    dic_src, dic_tgt, train, dev, test, train_src, dev_src, test_src, train_tgt, dev_tgt, test_tgt
+) = prepare_data()
 
 
 # Model
@@ -84,11 +98,16 @@ class TransformerNetwork(object):
     def __init__(self, nl, dh, nh, dr):
         # Master parameter collection
         self.pc = dy.ParameterCollection()
+        # Hyper-parameters
+        self.nl = nl
+        self.dh = dh
+        self.nh = nh
+        self.dr = dr
         # Encoder
         # -------
         # Source Word embeddings
         embed_init = UniformInit(0.1)
-        E_src = self.pc.add_parameters((len(dic_src), dh), init=embed_init)
+        E_src = self.pc.add_parameters((len(dic_src), dh), name="E-src")
         self.src_embed = Embeddings(self.pc, dic_src, dh, params=E_src)
         # Position embeddings
         self.pos_embeds = sin_embeddings(2000, dh, transposed=True)
@@ -98,10 +117,10 @@ class TransformerNetwork(object):
         # --------
         # Word embeddings
         embed_init = UniformInit(0.1)
-        E_tgt = self.pc.add_parameters((len(dic_tgt), dh), init=embed_init)
+        E_tgt = self.pc.add_parameters((len(dic_tgt), dh), name="E-tgt")
         self.tgt_embed = Embeddings(self.pc, dic_tgt, dh, params=E_tgt)
         # Start of sentence embedding
-        self.sos = self.pc.add_lookup_parameters((1, dh, 1), init=embed_init)
+        self.sos = self.pc.add_lookup_parameters((1, dh, 1))
         # Transformer
         self.dec = StackedCondTransformers(self.pc, nl, dh, dh, nh, dropout=dr)
         # Projection to logits
@@ -121,13 +140,13 @@ class TransformerNetwork(object):
 
     def encode(self, src):
         # Embed input words
-        src_embs = dy.transpose(self.src_embed(src.sequences))
+        src_embs = self.src_embed(src.sequences, length_dim=1) * np.sqrt(self.dh)
         # Add position encodings
         src_embs += dy.inputTensor(self.pos_embeds[:, :src.max_length])
         # Encode
-        hs = self.enc(src_embs, lengths=src.lengths, return_last_only=False)
+        X = self.enc(src_embs, lengths=src.lengths)
         #  Return list of encodings for each layer
-        return hs
+        return X
 
     def __call__(self, src, tgt):
         # Encode
@@ -140,10 +159,12 @@ class TransformerNetwork(object):
         # Mask for attention
         attn_mask = src.get_mask(base_val=0, mask_val=-np.inf)
         # Embed all words (except EOS)
-        tgt_embs = dy.transpose(self.tgt_embed(tgt.sequences[:-1]))
+        tgt_embs = self.tgt_embed(tgt.sequences[:-1], length_dim=1)
         # Add SOS embedding
         sos_embed = self.sos.batch([0] * tgt.batch_size)
         tgt_embs = dy.concatenate([sos_embed, tgt_embs], d=1)
+        # Scale embeddings
+        tgt_embs = tgt_embs * np.sqrt(self.dh)
         # Add positional encoding (tgt_embs has shape ``dh x L``)
         tgt_embs += dy.inputTensor(self.pos_embeds[:, :L])
         # Decode (h_dec has shape ``dh x L``)
@@ -151,7 +172,7 @@ class TransformerNetwork(object):
         # Logits (shape |V| x L)
         logits = self.project(h_dec)
         # Return list of logits (one per position)
-        return [dy.pick(logits, index=pos, dim=1)for pos in range(L)]
+        return [dy.pick(logits, index=pos, dim=1) for pos in range(L)]
 
     def decode(self, src, beam_size=3):
         """Find the best translation using beam search"""
@@ -190,13 +211,15 @@ class TransformerNetwork(object):
                 # Don't do anything if the beam is over
                 if beam["is_over"]:
                     continue
+                # Word embedding
+                wemb = beam["wemb"] * np.sqrt(self.dh)
+                wemb += dy.inputTensor(self.pos_embeds[:, len(beam["words"])])
                 # Run one step of the decoder
                 new_state, h, _, attn_weights = self.dec.step(
                     beam["state"],
-                    beam["wemb"],
+                    wemb,
                     X,
                     mask_c=mask,
-                    triu=True,
                     return_att=True
                 )
                 # Get log_probs
@@ -240,11 +263,11 @@ class TransformerNetwork(object):
 network = TransformerNetwork(N_LAYERS, MODEL_DIM, N_HEADS, DROPOUT)
 
 # Optimizer
-trainer = dy.AdamTrainer(network.pc)
+trainer = dy.AdamTrainer(network.pc, beta_1=0.9, beta_2=0.98)
 trainer.set_clip_threshold(CLIP_NORM)
 
 
-learning_rate = inverse_sqrt_schedule(warmup=4000, lr0=1 / np.sqrt(MODEL_DIM))
+learning_rate = inverse_sqrt_schedule(warmup=8000, lr0=1.0 / np.sqrt(MODEL_DIM))
 
 # Training
 # ========
@@ -252,13 +275,13 @@ learning_rate = inverse_sqrt_schedule(warmup=4000, lr0=1 / np.sqrt(MODEL_DIM))
 # Create the batch iterators
 print("Creating batch iterators")
 train_batches = SequencePairsBatches(
-    train_src, train_tgt, dic_src, dic_tgt, max_samples=64, max_tokens=2000,
+    train_src, train_tgt, dic_src, dic_tgt, max_samples=128, max_tokens=4000,
 )
 dev_batches = SequencePairsBatches(
-    dev_src, dev_tgt, dic_src, dic_tgt, max_samples=10
+    dev_src, dev_tgt, dic_src, dic_tgt, max_samples=1
 )
 test_batches = SequencePairsBatches(
-    test_src, test_tgt, dic_src, dic_tgt, max_samples=10
+    test_src, test_tgt, dic_src, dic_tgt, max_samples=1
 )
 print(f"{len(train_batches)} training batches")
 
@@ -336,7 +359,7 @@ for epoch in range(N_EPOCHS):
     if ppl < best_ppl:
         best_ppl = ppl
         dynn.io.save(network.pc, "iwslt_tf.model")
-    else:
+    elif LEARNING_RATE_DECAY != 1:
         print("Decreasing learning rate")
         trainer.learning_rate /= LEARNING_RATE_DECAY
         print(f"New learning rate: {trainer.learning_rate}")
@@ -354,6 +377,7 @@ def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
     """Compute BLEU score over a given dataset"""
     hyps = []
     refs = []
+    detok = sacremoses.MosesDetokenizer(lang="en")
     # Generate from the source data
     for src, tgt in batch_iterator:
         # Renew the computation graph
@@ -372,9 +396,9 @@ def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
                 if w == dic_tgt.unk_tok:
                     hyp_words[i] = src_words[aligns[b][i]]
             # Join words
-            src_sent = " ".join(src_words[:-1])
-            hyp_sent = " ".join(hyp_words)
-            ref_sent = " ".join(tgt_sents[tgt.original_idxs[b]][:-1])
+            src_sent = detok.detokenize(src_words)
+            hyp_sent = detok.detokenize(hyp_words)
+            ref_sent = detok.detokenize(tgt_sents[tgt.original_idxs[b]])
             # Maybe print
             if verbose:
                 print("-"*80)
@@ -385,12 +409,12 @@ def eval_bleu(batch_iterator, src_sents, tgt_sents, verbose=False):
             hyps.append(hyp_sent)
             refs.append(ref_sent)
     # BLEU
-    return sacrebleu.corpus_bleu(hyps, [refs]).score
+    return sacrebleu.corpus_bleu(hyps, [refs])
 
 
 # Dev set
 dev_bleu = eval_bleu(dev_batches, dev[0], dev[1])
-print(f"Dev BLEU: {dev_bleu:.2f}")
+print(f"Dev BLEU: {dev_bleu.score:.2f} (BP={dev_bleu.bp:.2f}, {dev_bleu.sys_len/dev_bleu.ref_len:.2f})")
 # Test set
-test_bleu = eval_bleu(test_batches, test[0], test[1])
-print(f"Test BLEU: {test_bleu:.2f}")
+test_bleu = eval_bleu(test_batches, test[0], test[1], verbose=True)
+print(f"Dev BLEU: {test_bleu.score:.2f} (BP={test_bleu.bp:.2f}, {test_bleu.sys_len/test_bleu.ref_len:.2f})")
