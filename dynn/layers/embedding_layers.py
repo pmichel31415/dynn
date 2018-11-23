@@ -105,7 +105,7 @@ class Embeddings(ParametrizedLayer):
             return dy.lookup_batch(self.params, idx, update=self.update)
         else:
             return dy.pick_batch(self.params_e, idx)
-        
+
     def __call__(self, idxs, length_dim=0):
         """Returns the input's embedding
 
