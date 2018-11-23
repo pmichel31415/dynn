@@ -136,13 +136,13 @@ def read_iwslt(
             src_l = src_seg.group(1)
             tgt_l = tgt_seg.group(1)
         # Split
-        src_l = src_l.strip().split()
-        tgt_l = tgt_l.strip().split()
+        src_l = src_l.strip()
+        tgt_l = tgt_l.strip()
         # Append eos maybe
         if src_eos is not None:
-            src_l.append(src_eos)
+            src_l += src_eos
         if tgt_eos is not None:
-            tgt_l.append(tgt_eos)
+            tgt_l += tgt_eos
         # Return
         yield src_l, tgt_l
 
