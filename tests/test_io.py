@@ -11,13 +11,14 @@ import dynet as dy
 from dynn import io
 
 
-class TestUtil(TestCase):
+class TestIO(TestCase):
 
     def setUp(self):
         self.max_dim = 50
         self.path = tempfile.mkdtemp()
         rand_idx = np.random.randint(1e6)
-        self.filename = os.path.join(self.path, f"test.{rand_idx}.pc.npz")
+        self.pc_filename = os.path.join(self.path, f"test.{rand_idx}.pc.npz")
+        self.txt_filename = os.path.join(self.path, f"test.{rand_idx}.txt")
 
     def tearDown(self):
         shutil.rmtree(self.path)
@@ -36,9 +37,9 @@ class TestUtil(TestCase):
     def test_load(self):
         # Create collection and save
         pc1 = self._dummy_pc()
-        io.save(pc1, self.filename)
+        io.save(pc1, self.pc_filename)
         # Load
-        pc2 = io.load(self.filename)
+        pc2 = io.load(self.pc_filename)
         # Compare parameter values
         for p1, p2 in zip(pc1.parameters_list(), pc2.parameters_list()):
             self.assertEqual(p1.name(), p2.name())
@@ -53,11 +54,11 @@ class TestUtil(TestCase):
     def test_populate(self):
         # Create collection and save
         pc1 = self._dummy_pc()
-        io.save(pc1, self.filename)
+        io.save(pc1, self.pc_filename)
         # Populate new pc
         pc2 = self._dummy_pc()
         # Compare parameter values
-        io.populate(pc2, self.filename)
+        io.populate(pc2, self.pc_filename)
         for p1, p2 in zip(pc1.parameters_list(), pc2.parameters_list()):
             self.assertEqual(p1.name(), p2.name())
             self.assertTrue(np.allclose(p1.as_array(), p2.as_array()))
@@ -71,12 +72,12 @@ class TestUtil(TestCase):
     def test_name_error(self):
         # Wrong file
         wrong_params = {"___not_a_param___": np.zeros(10)}
-        np.savez(self.filename, **wrong_params)
+        np.savez(self.pc_filename, **wrong_params)
         # No error
-        io.load(self.filename, ignore_invalid_names=True)
+        io.load(self.pc_filename, ignore_invalid_names=True)
         # Error
 
-        def will_raise(): io.load(self.filename)
+        def will_raise(): io.load(self.pc_filename)
         self.assertRaises(ValueError, will_raise)
 
     def test_shape_error(self):
@@ -84,17 +85,27 @@ class TestUtil(TestCase):
         pc1 = dy.ParameterCollection()
         pc1.add_parameters(10, name="this-one")
         # Save
-        io.save(pc1, self.filename)
+        io.save(pc1, self.pc_filename)
         # Second parameter collection with wrong param
         pc2 = dy.ParameterCollection()
         pc2.add_parameters(20, name="this-one")
         pc2.add_parameters(3, name="another-one")
         # No error
-        io.populate(pc2, self.filename, ignore_shape_mismatch=True)
+        io.populate(pc2, self.pc_filename, ignore_shape_mismatch=True)
         # Error
 
-        def will_raise(): io.populate(pc2, self.filename)
+        def will_raise(): io.populate(pc2, self.pc_filename)
         self.assertRaises(ValueError, will_raise)
+
+    def test_savetxt(self):
+        # Dummy data
+        txt = [str(np.random.randint(10)) for _ in range(100)]
+        # Save
+        io.savetxt(self.txt_filename, txt)
+        # Load
+        txt_2 = io.loadtxt(self.txt_filename)
+        # Check value
+        self.assertListEqual(txt, txt_2)
 
 
 if __name__ == '__main__':

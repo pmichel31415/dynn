@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Loading/saving functions
+Input/output functions
 ========================
 
-These functions help saving/loading models in dynet.
+These functions help writing to and reading from files 
 """
 import re
 
@@ -183,3 +183,19 @@ def populate(pc, filename, ignore_shape_mismatch=False):
                     )
             for row in range(len(file_value)):
                 lookup_param.init_row(row, file_value[row])
+
+
+def loadtxt(filename, encoding="utf-8"):
+    """Read text from a file"""
+    txt = []
+    with open(filename, "r", encoding=encoding) as f:
+        for line in f:
+            txt.append(line.strip())
+    return txt
+
+
+def savetxt(filename, txt, encoding="utf-8"):
+    """Save text to a file"""
+    with open(filename, "w", encoding=encoding) as f:
+        for line in txt:
+            print(line, file=f)
