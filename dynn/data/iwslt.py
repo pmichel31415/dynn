@@ -69,8 +69,15 @@ def download_iwslt(path=".", year="2016", langpair="de-en", force=False):
         if not os.path.isdir(root_path):
             os.mkdir(root_path)
         # Extract
+
+        def members(tf):
+            L = len(f"{langpair}/")
+            for member in tf.getmembers():
+                if member.path.startswith(f"{langpair}/"):
+                    member.path = member.path[L:]
+                    yield member
         with tarfile.open(abs_filename) as tar:
-            tar.extractall(root_path)
+            tar.extractall(root_path, members=members(tar))
 
 
 def read_iwslt(
@@ -114,8 +121,8 @@ def read_iwslt(
     root_path = os.path.join(os.path.abspath(path), directory)
     # Retrieve source/target file
     prefix = supported[f"{year}.{langpair}"][split]
-    src_file = os.path.join(root_path, langpair, f"{prefix}.{src}")
-    tgt_file = os.path.join(root_path, langpair, f"{prefix}.{tgt}")
+    src_file = os.path.join(root_path, f"{prefix}.{src}")
+    tgt_file = os.path.join(root_path, f"{prefix}.{tgt}")
     if not is_train:
         src_file = f"{src_file}.xml"
         tgt_file = f"{tgt_file}.xml"
