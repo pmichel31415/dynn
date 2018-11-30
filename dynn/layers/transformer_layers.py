@@ -21,7 +21,7 @@ def _transformer_mask(x, triu, mask, lengths, left_aligned):
 
     Args:
         x (:py:class:`dynet.Expression`): Input (dimensions
-            ``hidden_dim x L``)
+            ``input_dim x L``)
         triu (bool): Upper triangular masking
         mask (:py:class:`dynet.Expression`): Mask expression
             (if ``triu`` is ``False``)
@@ -57,7 +57,7 @@ class Transformer(ParametrizedLayer):
     Args:
         pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
             hold the parameters
-        hidden_dim (int): Hidden dimension (used everywhere)
+        input_dim (int): Hidden dimension (used everywhere)
         n_heads (int): Number of heads for self attention.
         activation (function, optional): MLP activation (defaults to relu).
         dropout (float, optional): Dropout rate (defaults to 0)
@@ -66,6 +66,7 @@ class Transformer(ParametrizedLayer):
     def __init__(
         self,
         pc,
+        input_dim,
         hidden_dim,
         n_heads,
         activation=relu,
@@ -74,18 +75,19 @@ class Transformer(ParametrizedLayer):
         super(Transformer, self).__init__(pc, "transformer")
         # Hyper-parameters
         self.n_heads = n_heads
+        self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.activation = activation
         self.dropout = dropout
         # Sub layers
-        d = hidden_dim
+        d = input_dim
         # Self-attention
         self.self_att = MultiHeadAttention(self.pc, n_heads, d, d, d, d, d)
         self.layer_norm_att = LayerNorm(self.pc, (d, 1))
         # MLP
         self.mlp = Sequential(
-            Affine(self.pc, d, d, activation=activation),
-            Affine(self.pc, d, d),
+            Affine(self.pc, d, hidden_dim, activation=activation),
+            Affine(self.pc, hidden_dim, d),
         )
         self.layer_norm_mlp = LayerNorm(self.pc, (d, 1))
 
@@ -112,7 +114,7 @@ class Transformer(ParametrizedLayer):
 
         Args:
             x (:py:class:`dynet.Expression`): Input (dimensions
-                ``hidden_dim x L``)
+                ``input_dim x L``)
             lengths (list, optional): Defaults to None. List of lengths for
                 masking (used for attention)
             left_aligned (bool, optional): Defaults to True. Used for masking
@@ -157,7 +159,7 @@ class StackedTransformers(Sequential):
         pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
             hold the parameters
         n_layers (int): Number of layers
-        hidden_dim (int): Hidden dimension (used everywhere)
+        input_dim (int): Hidden dimension (used everywhere)
         n_heads (int): Number of heads for self attention.
         activation (function, optional): MLP activation (defaults to relu).
         dropout (float, optional): Dropout rate (defaults to 0)
@@ -167,6 +169,7 @@ class StackedTransformers(Sequential):
         self,
         pc,
         n_layers,
+        input_dim,
         hidden_dim,
         n_heads,
         activation=relu,
@@ -174,7 +177,14 @@ class StackedTransformers(Sequential):
     ):
         # Instatiate layers
         tf_layers = [
-            Transformer(pc, hidden_dim, n_heads, activation, dropout)
+            Transformer(
+                pc,
+                input_dim,
+                hidden_dim,
+                n_heads,
+                activation,
+                dropout
+            )
             for _ in range(n_layers)
         ]
         # Initialize
@@ -197,7 +207,7 @@ class StackedTransformers(Sequential):
 
         Args:
             x (:py:class:`dynet.Expression`): Input (dimensions
-                ``hidden_dim x L``)
+                ``input_dim x L``)
             lengths (list, optional): Defaults to None. List of lengths for
                 masking (used for attention)
             left_aligned (bool, optional): Defaults to True. USed for masking
@@ -248,7 +258,7 @@ class CondTransformer(ParametrizedLayer):
     Args:
         pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
             hold the parameters
-        hidden_dim (int): Hidden dimension (used everywhere)
+        input_dim (int): Hidden dimension (used everywhere)
         cond_dim (int): Conditional dimension (dimension of the "encoder" side,
             used for attention)
         n_heads (int): Number of heads for attention.
@@ -259,6 +269,7 @@ class CondTransformer(ParametrizedLayer):
     def __init__(
         self,
         pc,
+        input_dim,
         hidden_dim,
         cond_dim,
         n_heads,
@@ -268,12 +279,13 @@ class CondTransformer(ParametrizedLayer):
         super(CondTransformer, self).__init__(pc, "cond-transformer")
         # Hyper-parameters
         self.n_heads = n_heads
+        self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.cond_dim = cond_dim
         self.activation = activation
         self.dropout = dropout
         # Sub layers
-        d = hidden_dim
+        d = input_dim
         dc = cond_dim
         # Self-attention
         self.self_att = MultiHeadAttention(self.pc, n_heads, d, d, d, d, d)
@@ -283,8 +295,8 @@ class CondTransformer(ParametrizedLayer):
         self.layer_norm_cond_att = LayerNorm(self.pc, (d, 1))
         # MLP
         self.mlp = Sequential(
-            Affine(self.pc, d, d, activation=activation),
-            Affine(self.pc, d, d),
+            Affine(self.pc, d, hidden_dim, activation=activation),
+            Affine(self.pc, hidden_dim, d),
         )
         self.layer_norm_mlp = LayerNorm(self.pc, (d, 1))
 
@@ -317,7 +329,7 @@ class CondTransformer(ParametrizedLayer):
 
         Args:
             x (:py:class:`dynet.Expression`): Input (dimensions
-                ``hidden_dim x L``)
+                ``input_dim x L``)
             c (:py:class:`dynet.Expression`): Context (dimensions
                 ``cond_dim x l``)
             lengths (list, optional): Defaults to None. List of lengths for
@@ -396,9 +408,9 @@ class CondTransformer(ParametrizedLayer):
         ``L`` th output
 
         Args:
-            x (:py:class:`dynet.Expression`): Input (dimension ``hidden_dim``)
+            x (:py:class:`dynet.Expression`): Input (dimension ``input_dim``)
             state (:py:class:`dynet.Expression`, optional): Previous "state"
-                (dimensions ``hidden_dim x (L-1)``)
+                (dimensions ``input_dim x (L-1)``)
             c (:py:class:`dynet.Expression`): Context (dimensions
                 ``cond_dim x l``)
             lengths_c (list, optional): Defaults to None. List of lengths for
@@ -457,7 +469,7 @@ class StackedCondTransformers(Sequential):
         pc (:py:class:`dynet.ParameterCollection`): Parameter collection to
             hold the parameters
         n_layers (int): Number of layers
-        hidden_dim (int): Hidden dimension (used everywhere)
+        input_dim (int): Hidden dimension (used everywhere)
         cond_dim (int): Conditional dimension (dimension of the "encoder" side,
             used for attention)
         n_heads (int): Number of heads for self attention.
@@ -469,6 +481,7 @@ class StackedCondTransformers(Sequential):
         self,
         pc,
         n_layers,
+        input_dim,
         hidden_dim,
         cond_dim,
         n_heads,
@@ -477,7 +490,7 @@ class StackedCondTransformers(Sequential):
     ):
         # Instatiate layers
         tf_layers = [
-            CondTransformer(pc, hidden_dim, cond_dim,
+            CondTransformer(pc, input_dim, hidden_dim, cond_dim,
                             n_heads, activation, dropout)
             for _ in range(n_layers)
         ]
@@ -505,7 +518,7 @@ class StackedCondTransformers(Sequential):
 
         Args:
             x (:py:class:`dynet.Expression`): Input (dimensions
-                ``hidden_dim x L``)
+                ``input_dim x L``)
             c (list): list of contexts (one per layer, each of dim
                 ``cond_dim x L``). If this is not a list (but an expression),
                 the same context will be used for each layer.
@@ -600,9 +613,9 @@ class StackedCondTransformers(Sequential):
 
 
         Args:
-            x (:py:class:`dynet.Expression`): Input (dimension ``hidden_dim``)
+            x (:py:class:`dynet.Expression`): Input (dimension ``input_dim``)
             state (:py:class:`dynet.Expression`): Previous "state" (list of
-                ``n_layers`` expressions of dimensions ``hidden_dim x (L-1)``)
+                ``n_layers`` expressions of dimensions ``input_dim x (L-1)``)
             c (:py:class:`dynet.Expression`): Context (dimensions
                 ``cond_dim x l``)
             lengths_c (list, optional): Defaults to None. List of lengths for

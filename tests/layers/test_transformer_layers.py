@@ -19,6 +19,7 @@ class TestTransformer(TestCase):
         self.pc = dy.ParameterCollection()
         self.nl = 3
         self.d = 8
+        self.dh = 5
         self.nh = 4
         self.L = 6
         self.bsz = self.L
@@ -62,6 +63,7 @@ class TestTransformer(TestCase):
         transform = transformer_layers.Transformer(
             self.pc,
             self.d,
+            self.dh,
             self.nh,
             dropout=self.dropout
         )
@@ -73,6 +75,7 @@ class TestTransformer(TestCase):
             self.pc,
             self.nl,
             self.d,
+            self.dh,
             self.nh,
             dropout=self.dropout
         )
@@ -82,6 +85,7 @@ class TestTransformer(TestCase):
         transform = transformer_layers.Transformer(
             self.pc,
             self.d,
+            self.dh,
             self.nh,
             dropout=self.dropout
         )
@@ -113,6 +117,7 @@ class TestCondTransformer(TestCase):
         self.pc = dy.ParameterCollection()
         self.nl = 3
         self.d = 8
+        self.dh = 5
         self.dc = 2
         self.nh = 4
         self.l_ = 7
@@ -184,6 +189,7 @@ class TestCondTransformer(TestCase):
         transform = transformer_layers.CondTransformer(
             self.pc,
             self.d,
+            self.dh,
             self.dc,
             self.nh,
             dropout=self.dropout
@@ -196,6 +202,7 @@ class TestCondTransformer(TestCase):
             self.pc,
             self.nl,
             self.d,
+            self.dh,
             self.dc,
             self.nh,
             dropout=self.dropout
@@ -207,6 +214,7 @@ class TestCondTransformer(TestCase):
         transform = transformer_layers.CondTransformer(
             self.pc,
             self.d,
+            self.dh,
             self.dc,
             self.nh,
             dropout=self.dropout
@@ -219,6 +227,7 @@ class TestCondTransformer(TestCase):
             self.pc,
             self.nl,
             self.d,
+            self.dh,
             self.dc,
             self.nh,
             dropout=self.dropout
