@@ -80,9 +80,17 @@ class PaddedSequenceBatches(object):
                 f"vs {len(targets)})"
             )
         self.num_samples = len(data)
-        # The data is stored as an array of lists sorted by length
+        # Keep track of each sequence's position
+        self.group_by_length = group_by_length
+        if self.group_by_length:
+            # Sort by length maybe
+            self.original_position = np.argsort([len(x) for x in data])
+        else:
+            self.original_position = np.arange(self.num_samples, dtype=int)
+        # The data is stored as an array of lists
         self.data = np.asarray(
-            sorted(data, key=lambda x: len(x)), dtype=object
+            [data[idx] for idx in self.original_position],
+            dtype=object
         )
         if self.labelled:
             self.targets = np.asfortranarray(
@@ -92,14 +100,11 @@ class PaddedSequenceBatches(object):
         self.max_samples = max_samples
         self.max_tokens = max_tokens
         self.shuffle = shuffle
-        self.group_by_length = group_by_length
         self.left_aligned = left_aligned
         self.pad_idx = pad_idx
         # Initial position and order
         self.position = 0
         self.batches = []
-        # Keep track of each sequence's position
-        self.original_position = np.arange(self.num_samples, dtype=int)
         # Reset position and shuffle the order if applicable
         self.reset()
 
