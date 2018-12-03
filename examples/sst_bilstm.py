@@ -53,14 +53,20 @@ test_x = dic.numberize(test_x)
 
 # Create the batch iterators
 print("Creating batch iterators")
+
+print("Creating batch iterators")
 train_batches = PaddedSequenceBatches(
-    train_x, train_y, dic, max_samples=32, group_by_length=True
+    train_x,
+    targets=train_y,
+    pad_idx=dic.pad_idx,
+    max_samples=32,
+    group_by_length=True
 )
 dev_batches = PaddedSequenceBatches(
-    dev_x, dev_y, dic, max_samples=32, shuffle=False
+    dev_x,  targets=dev_y, pad_idx=dic.pad_idx, max_samples=32, shuffle=False
 )
 test_batches = PaddedSequenceBatches(
-    test_x, test_y, dic, max_samples=32, shuffle=False
+    test_x,  targets=test_y, pad_idx=dic.pad_idx, max_samples=32, shuffle=False
 )
 
 # Model

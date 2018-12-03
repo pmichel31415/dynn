@@ -120,8 +120,8 @@ class TestPaddedSequenceBatches(TestCase):
         # Iterator
         return batching.PaddedSequenceBatches(
             self.data,
-            labels,
-            self.dic,
+            targets=labels,
+            pad_idx=self.dic.pad_idx,
             max_samples=self.max_samples,
             max_tokens=self.max_tokens,
             shuffle=shuffle,
@@ -134,8 +134,8 @@ class TestPaddedSequenceBatches(TestCase):
         # Iterator
         return batching.PaddedSequenceBatches(
             self.data,
-            targets,
-            self.dic,
+            targets=targets,
+            pad_idx=self.dic.pad_idx,
             max_samples=self.max_samples,
             max_tokens=self.max_tokens,
         )

@@ -25,7 +25,10 @@ class PaddedSequenceBatches(object):
         labels = np.random.randint(10, size=1000)
         # Iterator with at most 20 samples or 50 tokens per batch
         batched_dataset = PaddedSequenceBatches(
-            data, labels, max_samples=20
+            data,
+            targets=labels,
+            max_samples=20,
+            pad_idx=dic.pad_idx,
         )
         # Training loop
         for x, y in batched_dataset:
@@ -33,10 +36,21 @@ class PaddedSequenceBatches(object):
             # and y has shape (batch_size,)
             # Do something with x and y
 
+        # Without labels
+        batched_dataset = PaddedSequenceBatches(
+            data,
+            max_samples=20,
+            pad_idx=dic.pad_idx,
+        )
+        for x in batched_dataset:
+            # x is a SequenceBatch object
+            # Do something with x
+
+
     Args:
         data (list): List of numpy arrays containing the data
         targets (list): List of targets
-        dictionary ([type]): [description]
+        pad_value (number): Value at padded position
         max_samples (int, optional): Maximum number of samples per batch
         max_tokens (int, optional): Maximum number of tokens per batch. This
             count doesn't include padding tokens
@@ -51,34 +65,36 @@ class PaddedSequenceBatches(object):
     def __init__(
         self,
         data,
-        targets,
-        dictionary,
+        targets=None,
         max_samples=32,
+        pad_idx=0,
         max_tokens=np.inf,
         shuffle=True,
         group_by_length=True,
         left_aligned=True,
     ):
-        if len(data) != len(targets):
+        self.labelled = targets is not None
+        if self.labelled and len(data) != len(targets):
             raise ValueError(
                 f"Data and targets size mismatch ({len(data)} "
                 f"vs {len(targets)})"
             )
-        self.num_samples = len(targets)
+        self.num_samples = len(data)
         # The data is stored as an array of lists sorted by length
         self.data = np.asarray(
             sorted(data, key=lambda x: len(x)), dtype=object
         )
-        self.targets = np.asfortranarray(
-            np.stack([target for target in targets], axis=-1)
-        )
+        if self.labelled:
+            self.targets = np.asfortranarray(
+                np.stack([target for target in targets], axis=-1)
+            )
         # Main parameters
         self.max_samples = max_samples
         self.max_tokens = max_tokens
         self.shuffle = shuffle
         self.group_by_length = group_by_length
         self.left_aligned = left_aligned
-        self.pad_idx = dictionary.pad_idx
+        self.pad_idx = pad_idx
         # Initial position and order
         self.position = 0
         self.batches = []
@@ -118,8 +134,11 @@ class PaddedSequenceBatches(object):
             pad_idx=self.pad_idx,
             left_aligned=self.left_aligned,
         )
-        batch_targets = self.targets[..., index]
-        return batch_data, batch_targets
+        if not self.labelled:
+            return batch_data
+        else:
+            batch_targets = self.targets[..., index]
+            return batch_data, batch_targets
 
     def percentage_done(self):
         """What percent of the data has been covered in the current epoch"""
