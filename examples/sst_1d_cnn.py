@@ -92,10 +92,7 @@ conv1d = [
 network = Sequential(
     embeddings,
     # Convolution layer
-    Parallel(
-        *conv1d,
-        dim=-1,
-    ),
+    Parallel(*conv1d, dim=-1),
     # Max pooling
     MaxPool1D(),
     # Softmax layer

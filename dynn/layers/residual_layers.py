@@ -4,7 +4,6 @@ Residual layers
 ===============
 """
 
-from ..util import _default_value
 
 from .base_layers import BaseLayer
 from .functional_layers import IdentityLayer
@@ -22,19 +21,12 @@ class Residual(BaseLayer):
     ):
         super(Residual, self).__init__("residual")
         self.layer = layer
-        self.shortcut_transform = _default_value(
-            shortcut_transform, IdentityLayer()
-        )
+        if shortcut_transform is None:
+            self.shortcut_transform = IdentityLayer()
+        else:
+            self.shortcut_transform = shortcut_transform
         self.layer_weight = layer_weight
         self.shortcut_weight = shortcut_weight
-
-    def init(self, *args, **kwargs):
-        """Initialize the layer before performing computation
-
-        For example setup dropout, freeze some parameters, etc...
-        """
-        self.layer.init(*args, **kwargs)
-        self.shortcut_transform.init(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         """Execute forward pass"""

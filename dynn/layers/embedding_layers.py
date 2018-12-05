@@ -95,7 +95,10 @@ class Embeddings(ParametrizedLayer):
         """Numpy array containing the embeddings
 
         The first dimension is the lookup dimension """
-        return self.E.as_array()
+        if self.is_lookup:
+            return self.E.as_array()
+        else:
+            return self.parameters["E"].as_array()
 
     def __call__(self, idxs, length_dim=0):
         """Returns the input's embedding

@@ -171,8 +171,8 @@ class TestPool2DLayer(TestCase):
             print(f"- strides: {strides}")
             print(f"- kernel_size: {kernel_size}")
             pool2d = pooling_layers.MaxPool2D(
-                default_kernel_size=default_kernel_size,
-                default_strides=default_strides,
+                kernel_size=default_kernel_size,
+                strides=default_strides,
             )
             self._test_forward_backward(
                 pool2d, kernel_size=kernel_size, strides=strides

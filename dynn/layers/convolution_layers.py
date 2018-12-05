@@ -24,10 +24,10 @@ class Conv1D(ParametrizedLayer):
             (default: ``identity``)
         dropout (float, optional):  Dropout rate (default 0)
         nobias (bool, optional): Omit the bias (default ``False``)
-        default_zero_padded (bool, optional): Default padding behaviour. Pad
+        zero_padded (bool, optional): Default padding behaviour. Pad
             the input with zeros so that the output has the same length
             (default ``True``)
-        default_stride (list, optional): Default stride along the length
+        stride (list, optional): Default stride along the length
             (defaults to ``1``).
     """
 
@@ -40,8 +40,10 @@ class Conv1D(ParametrizedLayer):
         activation=identity,
         dropout_rate=0.0,
         nobias=False,
-        default_zero_padded=True,
-        default_stride=1,
+        zero_padded=True,
+        stride=1,
+        K=None,
+        b=None,
     ):
         super(Conv1D, self).__init__(pc, "conv1d")
         # Hyper-parameters
@@ -51,35 +53,23 @@ class Conv1D(ParametrizedLayer):
         self.activation = activation
         self.dropout_rate = dropout_rate
         self.nobias = nobias
-        self.zero_padded = default_zero_padded
-        self.stride = default_stride
+        self.zero_padded = zero_padded
+        self.stride = stride
         # Parameters
         # Filters have shape:
-        #   input_dim x kernel_width x 1 x num_filters
-        self.K_p = self.pc.add_parameters(
+        #   kernel_width x 1 x input_dim x num_filters
+        self.add_parameters(
+            "K",
             (self.kernel_width, 1, self.input_dim, self.num_kernels),
-            name="K"
+            param=K,
         )
         if not self.nobias:
-            self.b_p = self.pc.add_parameters(
-                self.num_kernels, name="b", init=ZeroInit()
+            self.add_parameters(
+                "b",
+                self.num_kernels,
+                param=b,
+                init=ZeroInit(),
             )
-
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        # Initialize parameters
-        self.K = self.K_p.expr(update)
-        if not self.nobias:
-            self.b = self.b_p.expr(update)
-
-        self.test = test
 
     def __call__(self, x, stride=None, zero_padded=None):
         """Forward pass
@@ -134,10 +124,10 @@ class Conv2D(ParametrizedLayer):
             (default: ``identity``)
         dropout (float, optional):  Dropout rate (default 0)
         nobias (bool, optional): Omit the bias (default ``False``)
-        default_zero_padded (bool, optional): Default padding behaviour. Pad
+        zero_padded (bool, optional): Default padding behaviour. Pad
             the image with zeros so that the output has the same width/height
             (default ``True``)
-        default_strides (list, optional): Default stride along each dimension
+        strides (list, optional): Default stride along each dimension
             (list of size 2, defaults to ``[1, 1]``).
     """
 
@@ -150,8 +140,10 @@ class Conv2D(ParametrizedLayer):
         activation=identity,
         dropout_rate=0.0,
         nobias=False,
-        default_zero_padded=True,
-        default_strides=None,
+        zero_padded=True,
+        strides=None,
+        K=None,
+        b=None,
     ):
         super(Conv2D, self).__init__(pc, "conv2d")
         # Hyper-parameters
@@ -161,40 +153,28 @@ class Conv2D(ParametrizedLayer):
         self.activation = activation
         self.dropout_rate = dropout_rate
         self.nobias = nobias
-        self.zero_padded = default_zero_padded
-        self.strides = util._default_value(default_strides, [1, 1])
+        self.zero_padded = zero_padded
+        self.strides = util._default_value(strides, [1, 1])
         # Parameters
         # Filters have shape:
-        # kernel_height x kernel_width x num_channels x num_kernels
-        self.K_p = self.pc.add_parameters(
+        #   kernel_height x kernel_width x num_channels x num_kernels
+        self.add_parameters(
+            "K",
             (
                 self.kernel_size[0],
                 self.kernel_size[1],
                 self.num_channels,
                 self.num_kernels
             ),
-            name="K"
+            param=K,
         )
         if not self.nobias:
-            self.b_p = self.pc.add_parameters(
-                self.num_kernels, name="b", init=ZeroInit()
+            self.add_parameters(
+                "b",
+                self.num_kernels,
+                param=b,
+                init=ZeroInit(),
             )
-
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        # Initialize parameters
-        self.K = self.K_p.expr(update)
-        if not self.nobias:
-            self.b = self.b_p.expr(update)
-
-        self.test = test
 
     def __call__(self, x, strides=None, zero_padded=None):
         """Forward pass

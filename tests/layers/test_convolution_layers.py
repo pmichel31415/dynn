@@ -72,8 +72,8 @@ class TestConv1D(TestCase):
                 self.kw,
                 dropout_rate=self.dropout_rate,
                 nobias=nobias,
-                default_zero_padded=default_zero_padded,
-                default_stride=default_stride,
+                zero_padded=default_zero_padded,
+                stride=default_stride,
             )
             self._test_forward_backward(
                 conv1d, stride=stride, zero_padded=zero_padded
@@ -154,8 +154,8 @@ class TestConv2D(TestCase):
                 self.ks,
                 dropout_rate=self.dropout_rate,
                 nobias=nobias,
-                default_zero_padded=default_zero_padded,
-                default_strides=default_strides,
+                zero_padded=default_zero_padded,
+                strides=default_strides,
             )
             self._test_forward_backward(
                 conv2d, strides=strides, zero_padded=zero_padded

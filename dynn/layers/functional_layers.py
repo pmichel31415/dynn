@@ -35,7 +35,7 @@ class ConstantLayer(BaseLayer):
         self.constant_val = constant
         self.constant = dy.inputTensor(self.constant_val)
 
-    def init(self, *args, **kwargs):
+    def init_layer(self, test=True, update=False):
         self.constant = dy.inputTensor(self.constant_val)
 
     def __call__(self, *args, **kwargs):
@@ -123,10 +123,6 @@ class UnaryOpLayer(BaseLayer):
         self.layer = layer
         self.unary_operation = unary_operation
 
-    def init(self, *args, **kwargs):
-        """Initialize the wrapped layer"""
-        self.layer.init(*args, **kwargs)
-
     def __call__(self, *args, **kwargs):
         """Returns ``unary_operation(layer(*args, **kwargs))``"""
         return self.unary_operation(self.layer(*args, **kwargs))
@@ -189,10 +185,6 @@ class BinaryOpLayer(BaseLayer):
         self.layer1 = layer1
         self.layer2 = layer2
         self.binary_operation = binary_operation
-
-    def init(self, *args, **kwargs):
-        self.layer1.init(*args, **kwargs)
-        self.layer2.init(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         """Execute forward pass"""

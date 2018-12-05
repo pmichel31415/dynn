@@ -34,10 +34,10 @@ network = Sequential(
         Conv2D(pc, 1, 16, [3, 3], activation=relu),
         dim=-1,
     ),
-    MaxPool2D(default_kernel_size=[2, 2], default_strides=[2, 2]),
+    MaxPool2D(kernel_size=[2, 2], strides=[2, 2]),
     # Second conv + maxpool layer
     Conv2D(pc, 32, 64, [5, 5], activation=relu),
-    MaxPool2D(default_kernel_size=[2, 2], default_strides=[2, 2]),
+    MaxPool2D(kernel_size=[2, 2], strides=[2, 2]),
     # Flatten the resulting 3d tensor
     Flatten(),
     # Final Multilayer perceptron

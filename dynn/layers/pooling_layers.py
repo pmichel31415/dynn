@@ -39,16 +39,16 @@ class MaxPool1D(BaseLayer):
     """1D max pooling
 
     Args:
-        default_kernel_size (int, optional): Default kernel size. If this is
+        kernel_size (int, optional): Default kernel size. If this is
             not specified, the default is to pool over the full sequence
             (default: ``None``)
         stride (int, optional): Default temporal stride (default: ``1``)
     """
 
-    def __init__(self, default_kernel_size=None, default_stride=1):
+    def __init__(self, kernel_size=None, stride=1):
         super(MaxPool1D, self).__init__("maxpool1d")
-        self.kernel_size = default_kernel_size
-        self.stride = default_stride
+        self.kernel_size = kernel_size
+        self.stride = stride
 
     def __call__(self, x, kernel_size=None, stride=None):
         """Max pooling over the first dimension.
@@ -170,16 +170,16 @@ class MaxPool2D(BaseLayer):
             two elements, one per dimension. If either is not specified, the
             default is to pool over the entire dimension
             (default: ``[None, None]``)
-        default_strides (list, optional): Stride along each dimension
+        strides (list, optional): Stride along each dimension
             (list of size 2, defaults to ``[1, 1]``).
     """
 
-    def __init__(self, default_kernel_size=None, default_strides=None):
+    def __init__(self, kernel_size=None, strides=None):
         super(MaxPool2D, self).__init__("maxpool1d")
         self.kernel_size = util._default_value(
-            default_kernel_size, [None, None]
+            kernel_size, [None, None]
         )
-        self.strides = util._default_value(default_strides, [1, 1])
+        self.strides = util._default_value(strides, [1, 1])
 
     def __call__(self, x, kernel_size=None, strides=None):
         """Max pooling over the first dimension.

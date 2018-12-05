@@ -36,12 +36,9 @@ class Sequential(BaseLayer):
                     f"Layer #{layer_idx} should be a subclass of BaseLayer, "
                     f"is {layer.__class__}"
                 )
+            setattr(self, f"layer_{layer_idx}", layer)
         self.return_last_only = default_return_last_only
         self.layers = layers
-
-    def init(self, test=False, update=True):
-        for layer in self.layers:
-            layer.init(test=test, update=update)
 
     def __call__(self, x, return_last_only=None):
         """Calls all the layers in succession.
@@ -101,14 +98,11 @@ class Parallel(BaseLayer):
                     f"Layer #{layer_idx} should be a subclass of BaseLayer, "
                     f"is {layer.__class__}"
                 )
+            setattr(self, f"layer_{layer_idx}", layer)
 
         self.layers = layers
         self.dim = dim
         self.insert_dim = default_insert_dim
-
-    def init(self, test=False, update=True):
-        for layer in self.layers:
-            layer.init(test=test, update=update)
 
     def __call__(self, x, insert_dim=None, **kwargs):
         """Calls all the layers in succession.

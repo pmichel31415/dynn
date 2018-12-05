@@ -35,6 +35,10 @@ class MLPAttention(ParametrizedLayer):
         hidden_dim,
         activation=tanh,
         dropout=0.0,
+        Wq=None,
+        Wk=None,
+        b=None,
+        V=None,
     ):
         super(MLPAttention, self).__init__(pc, "mlp-attention")
         # Hyper-parameters
@@ -44,17 +48,10 @@ class MLPAttention(ParametrizedLayer):
         self.activation = activation
         self.dropout = dropout
         # Parameters
-        self.Wq_p = self.pc.add_parameters((hidden_dim, query_dim), name="Wq")
-        self.Wk_p = self.pc.add_parameters((hidden_dim, key_dim), name="Wk")
-        self.b_p = self.pc.add_parameters((hidden_dim,), name="b")
-        self.V_p = self.pc.add_parameters((1, hidden_dim), name="V")
-
-    def init(self, test=True, update=False):
-        self.Wq = self.Wq_p.expr(update)
-        self.Wk = self.Wk_p.expr(update)
-        self.b = self.b_p.expr(update)
-        self.V = self.V_p.expr(update)
-        self.test = test
+        self.add_parameters("Wq", (hidden_dim, query_dim))
+        self.add_parameters("Wk", (hidden_dim, key_dim))
+        self.add_parameters("b", (hidden_dim,))
+        self.add_parameters("V", (1, hidden_dim))
 
     def __call__(self, query, keys, values, mask=None):
         """Compute attention scores and return the pooled value
@@ -145,7 +142,7 @@ class BilinearAttention(ParametrizedLayer):
         key_dim,
         dot_product=False,
         dropout=0.0,
-        A_p=None,
+        A=None,
     ):
         super(BilinearAttention, self).__init__(pc, "dot-attention")
         # Hyper-parameters
@@ -153,22 +150,22 @@ class BilinearAttention(ParametrizedLayer):
         self.query_dim = query_dim
         self.dot_product = dot_product
         self.dropout = dropout
-        # Parameters
+        # Check dimensions
         if self.dot_product:
             if key_dim != query_dim:
-                raise ValueError("")
+                raise ValueError(
+                    f"Dot product attention requires that key_dim==query_dim "
+                    f"(got {key_dim} and {query_dim} respectively)"
+                )
+        # Add the parameters for the bilinear form if needed
         if not self.dot_product:
-            init_scale = np.sqrt(3/(self.key_dim * self.query_dim))
-            self.A_p = A_p or self.pc.add_parameters(
+            init = UniformInit(np.sqrt(3 / (self.key_dim * self.query_dim)))
+            self.add_parameters(
+                "A",
                 (self.key_dim, self.query_dim),
-                name="A",
-                init=UniformInit(init_scale),
+                init=init,
+                param=A,
             )
-
-    def init(self, test=True, update=False):
-        if not self.dot_product:
-            self.A = self.A_p.expr(update)
-        self.test = test
 
     def __call__(self, query, keys, values, mask=None):
         """Compute attention scores and return the pooled value.
@@ -268,10 +265,10 @@ class MultiHeadAttention(ParametrizedLayer):
         hidden_dim,
         out_dim,
         dropout=0.0,
-        Wq_p=None,
-        Wk_p=None,
-        Wv_p=None,
-        Wo_p=None,
+        Wq=None,
+        Wk=None,
+        Wv=None,
+        Wo=None,
     ):
         super(MultiHeadAttention, self).__init__(pc, "dot-attention")
         # Hyper-parameters
@@ -290,29 +287,10 @@ class MultiHeadAttention(ParametrizedLayer):
             )
         self.head_dim = self.hidden_dim // self.n_heads
         # Parameters
-        self.Wq_p = Wq_p or self.pc.add_parameters(
-            (self.hidden_dim, self.query_dim),
-            name="Wq",
-        )
-        self.Wk_p = Wk_p or self.pc.add_parameters(
-            (self.hidden_dim, self.key_dim),
-            name="Wk",
-        )
-        self.Wv_p = Wv_p or self.pc.add_parameters(
-            (self.hidden_dim, self.value_dim),
-            name="Wv",
-        )
-        self.Wo_p = Wo_p or self.pc.add_parameters(
-            (self.out_dim, self.hidden_dim),
-            name="Wo",
-        )
-
-    def init(self, test=True, update=False):
-        self.Wq = self.Wq_p.expr(update)
-        self.Wk = self.Wk_p.expr(update)
-        self.Wv = self.Wv_p.expr(update)
-        self.Wo = self.Wo_p.expr(update)
-        self.test = test
+        self.add_parameters("Wq", (self.hidden_dim, self.query_dim), param=Wq)
+        self.add_parameters("Wk", (self.hidden_dim, self.key_dim), param=Wk)
+        self.add_parameters("Wv", (self.hidden_dim, self.value_dim), param=Wv)
+        self.add_parameters("Wo", (self.out_dim, self.hidden_dim), param=Wo)
 
     def __call__(self, queries, keys, values, mask=None):
         """Compute attention weightss and return the pooled value.

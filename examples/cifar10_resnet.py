@@ -44,7 +44,7 @@ for n_res_block in range(4):
             in_channels,
             num_kernels,
             [3, 3],
-            default_strides=[stride, stride],
+            strides=[stride, stride],
             activation=relu,
             nobias=True,
         ),
@@ -64,7 +64,7 @@ for n_res_block in range(4):
             in_channels,
             num_kernels,
             [1, 1],
-            default_strides=[stride, stride],
+            strides=[stride, stride],
             activation=identity,
             nobias=True,
         )

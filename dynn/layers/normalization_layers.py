@@ -21,26 +21,13 @@ class LayerNorm(ParametrizedLayer):
             hold the parameters
     """
 
-    def __init__(self, pc, input_dim):
+    def __init__(self, pc, input_dim, gain=None, bias=None):
         super(LayerNorm, self).__init__(pc, "layer-norm")
         # Hyperparameters
         self.input_dim = input_dim
         # Initialize bias and gain parameters
-        self.gain_p = self.pc.add_parameters(
-            input_dim, name="gain", init=OneInit())
-        self.bias_p = self.pc.add_parameters(
-            input_dim, name="bias", init=ZeroInit())
-
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        self.gain = self.gain_p.expr(update)
-        self.bias = self.bias_p.expr(update)
-        self.test = test
+        self.add_parameters("gain", input_dim, init=OneInit(), param=gain)
+        self.add_parameters("bias", input_dim, init=ZeroInit(), param=bias)
 
     def __call__(self, x, d=None):
         """Layer-normalize the input.

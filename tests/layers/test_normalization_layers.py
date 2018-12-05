@@ -34,8 +34,8 @@ class TestLayerNorm(TestCase):
         # Check dim
         self.assertTupleEqual(y.dim(), ((self.d1,), self.bsz))
         # Check values
-        expected_mean = norm.bias_p.as_array().mean()
-        expected_std = norm.gain_p.as_array().mean()
+        expected_mean = norm.parameters["bias"].as_array().mean()
+        expected_std = norm.parameters["gain"].as_array().mean()
         y_val = y.npvalue()
         for b in range(self.bsz):
             self.assertAlmostEqual(y_val[..., b].mean(), expected_mean, 6)
@@ -59,8 +59,8 @@ class TestLayerNorm(TestCase):
         # Check dim
         self.assertTupleEqual(y.dim(), ((self.d1, self.d2), self.bsz))
         # Check values
-        expected_mean = norm.bias_p.as_array().mean()
-        expected_std = norm.gain_p.as_array().mean()
+        expected_mean = norm.parameters["bias"].as_array().mean()
+        expected_std = norm.parameters["gain"].as_array().mean()
         y_val = y.npvalue()
         for b in range(self.bsz):
             for d in range(self.d2):
