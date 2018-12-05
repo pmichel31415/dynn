@@ -292,6 +292,7 @@ class TestSequencePairsBatches(TestCase):
         shuffle=True,
         group_by_length=None,
         labelled=False,
+        strict_token_limit=False,
     ):
         # Iterator
         return batching.SequencePairsBatches(
@@ -302,6 +303,7 @@ class TestSequencePairsBatches(TestCase):
             labels=self.labels if labelled else None,
             max_samples=self.max_samples,
             max_tokens=self.max_tokens,
+            strict_token_limit=strict_token_limit,
             shuffle=shuffle,
             group_by_length=group_by_length,
         )
@@ -320,6 +322,18 @@ class TestSequencePairsBatches(TestCase):
                      if w != batched_dataset.tgt_pad_idx]),
                 self.max_tokens
             )
+            self.assertEqual(x.sequences.shape[1], y.sequences.shape[1])
+
+    def test_not_grouped_strict_token_limit(self):
+        batched_dataset = self._dummy_iterator(strict_token_limit=True)
+        # Try iterating
+        for x, y in batched_dataset:
+            # check dimensions
+            self.assertEqual(x.sequences.shape[0], max(x.lengths))
+            self.assertLessEqual(x.sequences.shape[1], self.max_samples)
+            self.assertLessEqual(
+                x.sequences.size + y.sequences.size,
+                self.max_tokens)
             self.assertEqual(x.sequences.shape[1], y.sequences.shape[1])
 
     def test_grouped(self):

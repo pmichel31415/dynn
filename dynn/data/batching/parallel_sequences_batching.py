@@ -46,6 +46,8 @@ class SequencePairsBatches(object):
             sample is a pair of sentences)
         max_tokens (int, optional): Maximum number of total tokens per batch
             (source + target tokens)
+        strict_token_limit (bool, optional): Padding tokens will count towards
+            the ``max_tokens`` limit
         shuffle (bool, optional): Shuffle the dataset whenever starting a new
             iteration (default: ``True``)
         group_by_length (str, optional): Group sequences by length. One of
@@ -66,6 +68,7 @@ class SequencePairsBatches(object):
         labels=None,
         max_samples=32,
         max_tokens=99999999,
+        strict_token_limit=False,
         shuffle=True,
         group_by_length="source",
         src_left_aligned=True,
@@ -82,6 +85,7 @@ class SequencePairsBatches(object):
         # Main parameters
         self.max_samples = max_samples
         self.max_tokens = max_tokens
+        self.strict_token_limit = strict_token_limit
         self.shuffle = shuffle
         self.src_left_aligned = src_left_aligned
         self.tgt_left_aligned = tgt_left_aligned
@@ -200,11 +204,11 @@ class SequencePairsBatches(object):
         # Group the sentence into batches with appropriate size
         batches = []
         current_batch = []
-        n_tokens = n_samples = 0
+        n_tokens = n_samples = max_src_len = max_tgt_len = 0
         for idx in data_order:
             src_sample = self.src_data[idx]
             tgt_sample = self.tgt_data[idx]
-            len_sample = len(src_sample)+len(tgt_sample)
+            len_sample = len(src_sample) + len(tgt_sample)
             # If the sample itself causes the overflow, ignore it
             # with a warning
             if len_sample > self.max_tokens:
@@ -212,17 +216,24 @@ class SequencePairsBatches(object):
                 continue
             # Check if there are too many tokens/samples
             too_many_samples = n_samples + 1 > self.max_samples
-            too_many_tokens = n_tokens + len_sample > self.max_tokens
+            if self.strict_token_limit:
+                max_len = max(max_src_len, len(src_sample))
+                max_len += max(max_tgt_len, len(tgt_sample))
+                too_many_tokens = max_len * (n_samples + 1) > self.max_tokens
+            else:
+                too_many_tokens = n_tokens + len_sample > self.max_tokens
             # Handle the case if the batch is finished
             if too_many_samples or too_many_tokens:
                 # Add current batch and start a new one
                 batches.append(current_batch)
                 current_batch = []
-                n_tokens = n_samples = 0
+                n_tokens = n_samples = max_src_len = max_tgt_len = 0
             # Add the sample to the current batch
             current_batch.append(idx)
             n_samples += 1
             n_tokens += len_sample
+            max_src_len = max(max_src_len, len(src_sample))
+            max_tgt_len = max(max_tgt_len, len(tgt_sample))
     # Add last batch
         if len(current_batch) != 0:
             batches.append(current_batch)

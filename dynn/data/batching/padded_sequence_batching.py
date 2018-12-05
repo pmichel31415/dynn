@@ -54,6 +54,8 @@ class PaddedSequenceBatches(object):
         max_samples (int, optional): Maximum number of samples per batch
         max_tokens (int, optional): Maximum number of tokens per batch. This
             count doesn't include padding tokens
+        strict_token_limit (bool, optional): Padding tokens will count towards
+            the ``max_tokens`` limit
         shuffle (bool, optional): Shuffle the dataset whenever starting a new
             iteration (default: ``True``)
         group_by_length (bool, optional): Group sequences by length. This
@@ -69,6 +71,7 @@ class PaddedSequenceBatches(object):
         max_samples=32,
         pad_idx=0,
         max_tokens=np.inf,
+        strict_token_limit=False,
         shuffle=True,
         group_by_length=True,
         left_aligned=True,
@@ -99,6 +102,7 @@ class PaddedSequenceBatches(object):
         # Main parameters
         self.max_samples = max_samples
         self.max_tokens = max_tokens
+        self.strict_token_limit = strict_token_limit
         self.shuffle = shuffle
         self.left_aligned = left_aligned
         self.pad_idx = pad_idx
@@ -174,7 +178,7 @@ class PaddedSequenceBatches(object):
         # Group the sentence into batches with appropriate size
         batches = []
         current_batch = []
-        n_tokens = n_samples = 0
+        n_tokens = n_samples = max_len = 0
         for idx in data_order:
             sample = self.data[idx]
             # Handle the case if the batch is finished
@@ -183,17 +187,21 @@ class PaddedSequenceBatches(object):
                 continue
             # Check if there are too many tokens/samples
             too_many_samples = n_samples + 1 > self.max_samples
-            too_many_tokens = n_tokens + len(sample) > self.max_tokens
+            if self.strict_token_limit:
+                too_many_tokens = max(max_len, len(sample)) * (n_samples + 1)
+            else:
+                too_many_tokens = n_tokens + len(sample) > self.max_tokens
             # Handle the case if the batch is finished
             if too_many_samples or too_many_tokens:
                 # Add current batch and start a new one
                 batches.append(current_batch)
                 current_batch = []
-                n_tokens = n_samples = 0
+                n_tokens = n_samples = max_len = 0
             # Add the sample to the current batch
             current_batch.append(idx)
             n_samples += 1
             n_tokens += len(sample)
+            max_len = max(max_len, len(sample))
         # Add last batch
         if len(current_batch) != 0:
             batches.append(current_batch)
