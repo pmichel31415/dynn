@@ -71,12 +71,13 @@ class StackedRecurrentCells(BaseLayer, RecurrentCell):
 
     def __init__(self, *cells):
         super(StackedRecurrentCells, self).__init__("stacked-recurrent")
-        for cell in cells:
+        for cell_idx, cell in enumerate(cells):
             if not isinstance(cell, RecurrentCell):
                 raise ValueError(
                     f"Expected RecurrentCell, got {cell.__class__} in "
-                    "StackedRecurrentCells constructor."
+                    f"StackedRecurrentCells constructor (cell #{cell_idx}))."
                 )
+            setattr(self, f"cell_{cell_idx}", cell)
         self.cells = cells
         self.state_sizes = [len(cell.initial_value()) for cell in self.cells]
 
@@ -96,18 +97,6 @@ class StackedRecurrentCells(BaseLayer, RecurrentCell):
         """Get the output of the last cell"""
         last_cell_state = state[self.state_slices[-1]]
         return self.cells[-1].get_output(last_cell_state)
-
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        for cell in self.cells:
-            cell.init(test=test, update=update)
 
     def __call__(self, x, *state):
         """Compute the cell's output from the list of states and an input expression
@@ -156,7 +145,10 @@ class ElmanRNN(ParametrizedLayer, RecurrentCell):
         input_dim,
         hidden_dim,
         activation=tanh,
-        dropout=0.0
+        dropout=0.0,
+        Whx=None,
+        Whh=None,
+        b=None,
     ):
         super(ElmanRNN, self).__init__(pc, "elman-rnn")
         # Hyper parameters
@@ -168,43 +160,35 @@ class ElmanRNN(ParametrizedLayer, RecurrentCell):
         # Parameters
         # Input linear transform
         scale_whx = np.sqrt(2.0 / (self.hidden_dim + self.input_dim))
-        self.Whx_p = self.pc.add_parameters(
+        self.add_parameters(
+            "Whx",
             (self.hidden_dim, self.input_dim),
-            name='Whx',
-            init=NormalInit(mean=0, std=scale_whx)
+            init=NormalInit(mean=0, std=scale_whx),
+            param=Whx,
         )
         # Recurrent linear transform
         scale_whh = np.sqrt(1.0 / self.hidden_dim)
-        self.Whh_p = self.pc.add_parameters(
+        self.add_parameters(
+            "Whh",
             (self.hidden_dim, self.hidden_dim),
-            name='Whh',
-            init=NormalInit(mean=0, std=scale_whh)
+            init=NormalInit(mean=0, std=scale_whh),
+            param=Whh,
         )
         # Bias
-        self.b_p = self.pc.add_parameters(
-            (self.hidden_dim,), name='b', init=ZeroInit()
-        )
+        self.add_parameters("b", self.hidden_dim, init=ZeroInit(), param=b)
 
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        # Load weights in computation graph
-        self.Whx = self.Whx_p.expr()
-        self.Whh = self.Whh_p.expr()
-        self.b = self.b_p.expr()
+    def init_layer(self, test=True, update=False):
+        super(ElmanRNN, self).init_layer(test=test, update=update)
         # Initialize dropout mask (for recurrent dropout)
-        self.test = test
         if not test and self.dropout > 0:
             self.dropout_mask_x = dy.dropout(
-                dy.ones(self.input_dim), self.dropout)
+                dy.ones(self.input_dim),
+                self.dropout
+            )
             self.dropout_mask_h = dy.dropout(
-                dy.ones(self.hidden_dim), self.dropout)
+                dy.ones(self.hidden_dim),
+                self.dropout
+            )
 
     def __call__(self, x, h):
         """Perform the recurrent update.
@@ -256,6 +240,9 @@ class LSTM(ParametrizedLayer, RecurrentCell):
         hidden_dim,
         dropout_x=0.0,
         dropout_h=0.0,
+        Whx=None,
+        Whh=None,
+        b=None,
     ):
         super(LSTM, self).__init__(pc, "compact-lstm")
         # Hyperparameters
@@ -267,44 +254,34 @@ class LSTM(ParametrizedLayer, RecurrentCell):
         # Parameters
         # Input to hidden
         scale_whx = np.sqrt(2.0 / (4 * self.hidden_dim + self.input_dim))
-        self.Whx_p = self.pc.add_parameters(
+        self.add_parameters(
+            "Whx",
             (self.hidden_dim * 4, self.input_dim),
-            name="Whx",
-            init=NormalInit(mean=0, std=scale_whx)
+            init=NormalInit(mean=0, std=scale_whx),
+            param=Whx,
         )
         # Output to hidden
         scale_whh = np.sqrt(2.0 / (5 * self.hidden_dim))
-        self.Whh_p = self.pc.add_parameters(
+        self.add_parameters(
+            "Whh",
             (self.hidden_dim * 4, self.hidden_dim),
-            name="Whh",
-            init=NormalInit(mean=0, std=scale_whh)
+            init=NormalInit(mean=0, std=scale_whh),
+            param=Whh,
         )
         # Bias
-        self.b_p = self.pc.add_parameters(
-            (self.hidden_dim * 4,), name="b", init=ZeroInit()
-        )
+        self.add_parameters("b", self.hidden_dim * 4, init=ZeroInit(), param=b)
 
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        # Load weights in computation graph
-        self.Whx = self.Whx_p.expr(update)
-        self.Whh = self.Whh_p.expr(update)
-        self.b = self.b_p.expr(update)
-        # Initialize dropout mask
-        self.test = test
+    def init_layer(self, test=True, update=False):
+        super(LSTM, self).init_layer(test=test, update=update)
+        # Initialize dropout mask (for recurrent dropout)
         if not test and (self.dropout_x > 0 or self.dropout_h > 0):
             self.dropout_mask_x = dy.dropout(
-                dy.ones(self.input_dim), self.dropout_x
+                dy.ones(self.input_dim),
+                self.dropout_x,
             )
             self.dropout_mask_h = dy.dropout(
-                dy.ones(self.hidden_dim), self.dropout_h
+                dy.ones(self.hidden_dim),
+                self.dropout_h,
             )
 
     def __call__(self, x, h, c):
@@ -369,7 +346,7 @@ class StackedLSTM(StackedRecurrentCells):
         dropout_h=0.0,
     ):
         # Create recurrent cells
-        dims = [input_dim] + [hidden_dim]*num_layers
+        dims = [input_dim] + [hidden_dim] * num_layers
         lstm_cells = [
             LSTM(pc, di, dh, dropout_x=dropout_x, dropout_h=dropout_h)
             for di, dh in zip(dims[:-1], dims[1:])

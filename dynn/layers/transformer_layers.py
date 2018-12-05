@@ -91,13 +91,6 @@ class Transformer(ParametrizedLayer):
         )
         self.layer_norm_mlp = LayerNorm(self.pc, (d, 1))
 
-    def init(self, test=True, update=False):
-        self.self_att.init(test=test, update=update)
-        self.layer_norm_att.init(test=test, update=update)
-        self.mlp.init(test=test, update=update)
-        self.layer_norm_mlp.init(test=test, update=update)
-        self.test = test
-
     def __call__(
         self,
         x,
@@ -299,15 +292,6 @@ class CondTransformer(ParametrizedLayer):
             Affine(self.pc, hidden_dim, d),
         )
         self.layer_norm_mlp = LayerNorm(self.pc, (d, 1))
-
-    def init(self, test=True, update=False):
-        self.self_att.init(test=test, update=update)
-        self.layer_norm_self_att.init(test=test, update=update)
-        self.cond_att.init(test=test, update=update)
-        self.layer_norm_cond_att.init(test=test, update=update)
-        self.mlp.init(test=test, update=update)
-        self.layer_norm_mlp.init(test=test, update=update)
-        self.test = test
 
     def __call__(
         self,

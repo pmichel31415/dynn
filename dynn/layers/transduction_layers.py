@@ -30,12 +30,7 @@ class Transduction(BaseLayer):
     """
 
     def __init__(self, layer):
-
         self.layer = layer
-
-    def init(self, *args, **kwargs):
-        """Passes its arguments to the recurrent layer"""
-        self.layer.init(*args, **kwargs)
 
     def __call__(
         self,
@@ -168,10 +163,6 @@ class Unidirectional(BaseLayer):
         self.cell = cell
         self.output_only = output_only
 
-    def init(self, *args, **kwargs):
-        """Passes its arguments to the recurrent layer"""
-        self.cell.init(*args, **kwargs)
-
     def __call__(
         self,
         input_sequence,
@@ -296,9 +287,13 @@ class Bidirectional(BaseLayer):
     def __init__(self, forward_cell, backward_cell, output_only=False):
         super(Bidirectional, self).__init__("bidirectional")
         self.forward_transductor = Unidirectional(
-            forward_cell, output_only)
+            forward_cell,
+            output_only
+        )
         self.backward_transductor = Unidirectional(
-            backward_cell, output_only)
+            backward_cell,
+            output_only
+        )
         self.output_only = output_only
 
     def __call__(
