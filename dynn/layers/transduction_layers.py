@@ -301,11 +301,6 @@ class Bidirectional(BaseLayer):
             backward_cell, output_only)
         self.output_only = output_only
 
-    def init(self, *args, **kwargs):
-        """Passes its arguments to the recurrent layers"""
-        self.forward_transductor.init(*args, **kwargs)
-        self.backward_transductor.init(*args, **kwargs)
-
     def __call__(
         self,
         input_sequence,

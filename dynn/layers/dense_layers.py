@@ -35,35 +35,17 @@ class Affine(ParametrizedLayer):
         activation=identity,
         dropout=0.0,
         nobias=False,
-        W_p=None,
-        b_p=None,
+        W=None,
+        b=None,
     ):
         super(Affine, self).__init__(pc, "affine")
-        self.W_p = W_p or self.pc.add_parameters(
-            (output_dim, input_dim), name="W")
+        self.add_parameters("W", (output_dim, input_dim), param=W)
         if not nobias:
-            self.b_p = b_p or self.pc.add_parameters(
-                output_dim, name="b", init=ZeroInit())
+            self.add_parameters("b", output_dim, param=b, init=ZeroInit())
 
         self.dropout = dropout
         self.nobias = nobias
         self.activation = activation
-
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-
-        self.W = self.W_p.expr(update)
-        if not self.nobias:
-            self.b = self.b_p.expr(update)
-
-        self.test = test
 
     def __call__(self, x):
         """Forward pass.
@@ -107,6 +89,10 @@ class GatedLayer(ParametrizedLayer):
         output_dim,
         activation=dy.tanh,
         dropout=0.0,
+        Wo=None,
+        bo=None,
+        Wg=None,
+        bg=None,
     ):
         super(GatedLayer, self).__init__(pc, "gated")
         # Hyperparameters
@@ -115,32 +101,11 @@ class GatedLayer(ParametrizedLayer):
         self.dropout = dropout
         self.activation = activation
         # Affine layer parameters
-        self.Wo_p = self.pc.add_parameters((output_dim, input_dim), name="Wo")
-        self.bo_p = self.pc.add_parameters(
-            output_dim, name="bo", init=ZeroInit()
-        )
+        self.add_parameters("Wo", (output_dim, input_dim), param=Wo)
+        self.add_parameters("bo", output_dim, param=bo, init=ZeroInit())
         # Gating layer parameters
-        self.Wg_p = self.pc.add_parameters((output_dim, input_dim), name="Wg")
-        self.bg_p = self.pc.add_parameters(
-            output_dim, name="bg", init=ZeroInit()
-        )
-
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        self.Wo = self.Wo_p.expr(update)
-        self.bo = self.bo_p.expr(update)
-
-        self.Wg = self.Wg_p.expr(update)
-        self.bg = self.bg_p.expr(update)
-
-        self.test = test
+        self.add_parameters("Wg", (output_dim, input_dim), param=Wg)
+        self.add_parameters("bg", output_dim, param=bg, init=ZeroInit())
 
     def __call__(self, x):
         """Forward pass
@@ -154,8 +119,8 @@ class GatedLayer(ParametrizedLayer):
         """
 
         # Output
-        self.o = self.activation(dy.affine_transform([self.bo, self.Wo, x]))
+        o = self.activation(dy.affine_transform([self.bo, self.Wo, x]))
         # Gate
-        self.g = dy.logistic(dy.affine_transform([self.bg, self.Wg, x]))
+        g = dy.logistic(dy.affine_transform([self.bg, self.Wg, x]))
         # final output
-        return dy.cmult(self.g, self.o)
+        return dy.cmult(g, o)

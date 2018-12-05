@@ -41,7 +41,7 @@ class Embeddings(ParametrizedLayer):
         dictionary (:py:class:`dynn.data.dictionary.Dictionary`): Mapping
             from symbols to indices
         embed_dim (int): Embedding dimension
-        initialization (:py:class:`dynet.PyInitializer`, optional): How
+        init (:py:class:`dynet.PyInitializer`, optional): How
             to initialize the parameters. By default this will initialize
             to :math:`\mathcal N(0, \\frac{`}{\sqrt{\\textt{embed\_dim}}})`
         pad_mask (float, optional): If provided, embeddings of the
@@ -53,9 +53,9 @@ class Embeddings(ParametrizedLayer):
         pc,
         dictionary,
         embed_dim,
-        initialization=None,
+        init=None,
         pad_mask=None,
-        params=None,
+        E=None,
     ):
         super(Embeddings, self).__init__(pc, "embedding")
         # Check input
@@ -70,41 +70,32 @@ class Embeddings(ParametrizedLayer):
         self.pad_mask = pad_mask
         # Default init
         default_init = NormalInit(std=1/np.sqrt(self.embed_dim))
-        initialization = initialization or default_init
+        init = init or default_init
         # Parameter shape for dynet
         if isinstance(embed_dim, (list, tuple, np.ndarray)):
-            param_dim = tuple([self.size] + [dim for dim in embed_dim])
+            dim = tuple([self.size] + [d for d in embed_dim])
         else:
-            param_dim = (self.size, embed_dim)
+            dim = (self.size, embed_dim)
         # Create lookup parameter
-        self.params = params or self.pc.add_lookup_parameters(
-            param_dim,
-            init=initialization,
-            name="params"
-        )
-        self.is_lookup = isinstance(self.params, dy.LookupParameters)
-        # Default update parameter
-        self.update = True
-
-    def init(self, test=False, update=True):
-        """Initialize the layer before performing computation
-
-        Args:
-            test (bool, optional): If test mode is set to ``True``,
-                dropout is not applied (default: ``True``)
-            update (bool, optional): Whether to update the parameters
-                (default: ``True``)
-        """
-        if not self.is_lookup:
-            self.params_e = self.params.expr(update)
-        self.test = test
-        self.update = update
+        if E is not None and isinstance(E, dy.Parameters):
+            self.is_lookup = False
+            self.add_parameters("E", dim, param=E)
+        else:
+            self.is_lookup = True
+            self.add_lookup_parameters("E", dim, lookup_param=E, init=init)
 
     def _lookup(self, idx):
         if self.is_lookup:
-            return dy.lookup_batch(self.params, idx, update=self.update)
+            return dy.lookup_batch(self.E, idx, update=self.update)
         else:
-            return dy.pick_batch(self.params_e, idx)
+            return dy.pick_batch(self.E, idx)
+
+    @property
+    def weights(self):
+        """Numpy array containing the embeddings
+
+        The first dimension is the lookup dimension """
+        return self.E.as_array()
 
     def __call__(self, idxs, length_dim=0):
         """Returns the input's embedding

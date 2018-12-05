@@ -38,7 +38,7 @@ class TestEmbeddings(TestCase):
         self.assertTupleEqual(y.dim()[0], (self.dim,))
         self.assertEqual(y.dim()[1], self.bsz)
         # Check values
-        expected_values = embed.params.as_array()[idxs].transpose()
+        expected_values = embed.weights[idxs].transpose()
         self.assertTrue(np.allclose(y.npvalue(), expected_values))
 
 
