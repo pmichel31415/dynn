@@ -147,7 +147,7 @@ class PaddedSequenceBatches(object):
         if not self.labelled:
             return batch_data
         else:
-            batch_targets = self.targets[..., self.original_position[index]]
+            batch_targets = self.targets[..., index]
             return batch_data, batch_targets
 
     def percentage_done(self):
