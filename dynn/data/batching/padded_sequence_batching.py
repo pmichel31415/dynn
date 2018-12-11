@@ -97,7 +97,8 @@ class PaddedSequenceBatches(object):
         )
         if self.labelled:
             self.targets = np.asfortranarray(
-                np.stack([target for target in targets], axis=-1)
+                np.stack([targets[idx]
+                          for idx in self.original_position], axis=-1)
             )
         # Main parameters
         self.max_samples = max_samples
