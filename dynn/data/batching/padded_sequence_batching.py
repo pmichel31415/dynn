@@ -188,7 +188,8 @@ class PaddedSequenceBatches(object):
             # Check if there are too many tokens/samples
             too_many_samples = n_samples + 1 > self.max_samples
             if self.strict_token_limit:
-                too_many_tokens = max(max_len, len(sample)) * (n_samples + 1)
+                max_n_tokens = max(max_len, len(sample)) * (n_samples + 1)
+                too_many_tokens = max_n_tokens > self.max_tokens
             else:
                 too_many_tokens = n_tokens + len(sample) > self.max_tokens
             # Handle the case if the batch is finished
@@ -199,6 +200,7 @@ class PaddedSequenceBatches(object):
                 n_tokens = n_samples = max_len = 0
             # Add the sample to the current batch
             current_batch.append(idx)
+            # Update sample size
             n_samples += 1
             n_tokens += len(sample)
             max_len = max(max_len, len(sample))
